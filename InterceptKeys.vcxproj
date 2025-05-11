@@ -152,8 +152,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
+    <None Include="add_to_task_scheduler.ps1" />
+    <None Include="add_to_task_scheduler.py" />
     <None Include="interception.dll" />
     <None Include="README.md" />
+    <None Include="Run_InterceptKeys.xml.example" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h" />
