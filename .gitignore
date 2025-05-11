@@ -1,3 +1,5 @@
 .vs/**
 InterceptKeys/**
 x64/**
+Debug/
+Release/
