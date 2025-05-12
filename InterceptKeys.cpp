@@ -36,6 +36,8 @@ int main(int argc, char* argv[]) {
 	InterceptionDevice device;
 
 	interception_set_filter(context, interception_is_keyboard, INTERCEPTION_FILTER_KEY_ALL);
+	
+#ifdef _DEBUG
 	bool detectKeysOnly = false;
 	size_t noOfClicks = 0;
 
@@ -54,6 +56,8 @@ int main(int argc, char* argv[]) {
 			}
 		}
 	}
+#endif // _DEBUG
+
 
 	while (1) {
 		InterceptionStroke stroke;
@@ -68,6 +72,7 @@ int main(int argc, char* argv[]) {
 			bool is_down = (state & INTERCEPTION_KEY_UP) == 0;
 			bool e0 = (state & INTERCEPTION_KEY_E0) != 0; // Extended key flag
 
+#ifdef _DEBUG
 			if (detectKeysOnly) {
 				std::stringstream _scanCode;
 				std::string scanCode;
@@ -85,6 +90,7 @@ int main(int argc, char* argv[]) {
 				interception_send(context, device, &stroke, 1);
 				continue;
 			}
+#endif // _DEBUG
 
 			// Iterating entries to find the one that matches
 			// If the entry is found, send the mapped key stroke
