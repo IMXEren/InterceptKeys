@@ -1,42 +1,20 @@
 #include "common.h"
 #include "interception.h"
-#include "keymap.hpp"
 #include "keys.h"
-
-#include <windows.h>
+#include "keymap.hpp"
+#include "Service.hpp"
 
 #include <sstream>
 #include <string>
 
 extern std::vector<KeyMapEntry> mapEntries;
 
-int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-	HANDLE hMutex = CreateMutexA(nullptr, FALSE, "Global\\InterceptKeysMutex");
-	if (hMutex == nullptr) {
-		// MessageBoxA(nullptr, "Failed to create mutex.", "Error", MB_OK |
-		// MB_ICONERROR);
-		return 1;
-	}
-
-	if (GetLastError() == ERROR_ALREADY_EXISTS) {
-		// MessageBoxA(nullptr, "Another instance is already running.", "Instance
-		// Detected", MB_OK | MB_ICONEXCLAMATION);
-		return 1;
-	}
-
-	int main(int argc, char* argv[]);
-	int status = main(__argc, __argv);
-	ReleaseMutex(hMutex);
-	CloseHandle(hMutex);
-	return status;
-}
-
-int main(int argc, char* argv[]) {
+int InterceptMain(int argc, char* argv[]) {
 	InterceptionContext context = interception_create_context();
 	InterceptionDevice device;
 
 	interception_set_filter(context, interception_is_keyboard, INTERCEPTION_FILTER_KEY_ALL);
-	
+
 #ifdef _DEBUG
 	bool detectKeysOnly = false;
 	size_t noOfClicks = 0;
@@ -58,8 +36,7 @@ int main(int argc, char* argv[]) {
 	}
 #endif // _DEBUG
 
-
-	while (1) {
+	while (g_ServiceStatus.dwCurrentState != SERVICE_STOP_PENDING) {
 		InterceptionStroke stroke;
 		device = interception_wait(context);
 

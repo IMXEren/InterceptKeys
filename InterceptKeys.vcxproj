@@ -134,7 +134,7 @@
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -148,11 +148,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="InterceptKeys.cpp" />
+    <ClCompile Include="logger.cpp" />
     <ClCompile Include="mapped_entries.cpp" />
+    <ClCompile Include="Service.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
-    <None Include="add_to_task_scheduler.ps1" />
+    <None Include="auto_start.ps1" />
     <None Include="add_to_task_scheduler.py" />
     <None Include="interception.dll" />
     <None Include="README.md" />
@@ -163,6 +165,8 @@
     <ClInclude Include="interception.h" />
     <ClInclude Include="keymap.hpp" />
     <ClInclude Include="keys.h" />
+    <ClInclude Include="logger.hpp" />
+    <ClInclude Include="Service.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

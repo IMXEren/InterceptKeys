@@ -3,3 +3,4 @@ InterceptKeys/**
 x64/**
 Debug/
 Release/
+*.log
