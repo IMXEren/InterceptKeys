@@ -154,7 +154,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
-    <None Include="auto_start.ps1" />
+    <None Include="add_to_auto_start.ps1" />
+    <None Include="add_to_service.py" />
     <None Include="add_to_task_scheduler.py" />
     <None Include="interception.dll" />
     <None Include="README.md" />
