@@ -36,11 +36,14 @@ int InterceptMain(int argc, char* argv[]) {
 	}
 #endif // _DEBUG
 
+	KeyMapEntry::removeEmptyEntries(mapEntries);
 	while (g_ServiceStatus.dwCurrentState != SERVICE_STOP_PENDING) {
 		InterceptionStroke stroke;
+		DEBUG_PRINT("Waiting on context...\n");
 		device = interception_wait(context);
 
 		if (interception_is_keyboard(device)) {
+			DEBUG_PRINT("Waiting for key stroke...\n");
 			interception_receive(context, device, &stroke, 1);
 			InterceptionKeyStroke* kstroke = (InterceptionKeyStroke*)&stroke;
 
@@ -63,6 +66,7 @@ int InterceptMain(int argc, char* argv[]) {
 				// Only on click as to not cause confusion
 				if (is_down) {
 					DEBUG_PRINT("%zd. Pressed key: %d (%s), click: %d, state: %d\n", ++noOfClicks, code, scanCode.c_str(), is_down, state);
+					// DEBUG_PRINT("{}. Pressed key: {} ({}), click: {}, state: {}\n", ++noOfClicks, code, scanCode.c_str(), is_down, state);
 				}
 				interception_send(context, device, &stroke, 1);
 				continue;
@@ -71,12 +75,8 @@ int InterceptMain(int argc, char* argv[]) {
 
 			// Iterating entries to find the one that matches
 			// If the entry is found, send the mapped key stroke
-			int entryIndex = 0;
 			bool sendMappedKeyStroke = false;
 			for (auto& entry : mapEntries) {
-				if (entry.from.empty())
-					mapEntries.erase(mapEntries.begin() + entryIndex);
-
 				bool foundModifierKey = false;
 				bool foundRegularKey = false;
 
@@ -86,32 +86,38 @@ int InterceptMain(int argc, char* argv[]) {
 					bool extended = e0bits == SC_E0;
 					if (extended)
 						fromKey -= SC_E0;
-					// DEBUG_PRINT("From key[%d]: %d, extended: %d, finding key: %d, e0:
-					// %d\n", fromKeyIndex, fromKey, extended, code, e0);
+					DEBUG_PRINT("From key[%d]: %d, extended: %d, finding key: %d, e0: %d\n",
+						fromKeyIndex, fromKey, extended, code, e0);
 
 					bool isLast = fromKeyIndex == entry.from.size() - 1;
 
 					// Regular key
 					if (isLast) {
 						foundRegularKey = fromKey == code && extended == e0;
-						if (foundRegularKey && entry.ctr == entry.from.size() - 1) {
+						DEBUG_PRINT("Reached last key! found regular key: %d, ctr: %d, entry.from.size() - 1: %zd\n",
+							foundRegularKey, entry.ctr(), entry.from.size() - 1);
+						if (foundRegularKey && entry.ctr() == entry.from.size() - 1) {
 							// This key should be suppressed
 							// Release the modifier keys
 							// Send the mapped key combo
 							sendMappedKeyStroke = true;
 							DEBUG_PRINT("Pressed regular key: %d, click: %d, state: %d\n",
 								code, is_down, state);
+							// DEBUG_PRINT("Pressed regular key: {}, click: {}, state: {}\n",
+							// code, is_down, state);
 						}
 					}
 					// Modifier combo sequence can be random
 					else if (fromKey == code && extended == e0) {
 						foundModifierKey = true;
 						if (is_down)
-							entry.ctr++;
+							entry.clickKey(code);
 						else
-							entry.ctr--;
+							entry.releaseKey(code);
 						DEBUG_PRINT("Pressed modifier key: %d, click: %d, state: %d\n",
 							code, is_down, state);
+						// DEBUG_PRINT("Pressed modifier key: {}, click: {}, state: {}\n",
+						// 	code, is_down, state);
 					}
 
 					if (foundModifierKey || foundRegularKey)
@@ -137,8 +143,7 @@ int InterceptMain(int argc, char* argv[]) {
 						if (extended)
 							mkfstroke.state |= INTERCEPTION_KEY_E0;
 
-						interception_send(context, device, (InterceptionStroke*)&mkfstroke,
-							1);
+						interception_send(context, device, (InterceptionStroke*)&mkfstroke, 1);
 						fromKeyIndex++;
 					}
 
@@ -158,10 +163,11 @@ int InterceptMain(int argc, char* argv[]) {
 						if (extended)
 							mktstroke.state |= INTERCEPTION_KEY_E0;
 
-						interception_send(context, device, (InterceptionStroke*)&mktstroke,
-							1);
+						interception_send(context, device, (InterceptionStroke*)&mktstroke, 1);
 						DEBUG_PRINT("Sending key: %d, click: %d, state: %d\n",
 							mktstroke.code, is_down, mktstroke.state);
+						// DEBUG_PRINT("Sending key: {}, click: {}, state: {}\n",
+						// 	mktstroke.code, is_down, mktstroke.state);
 						};
 
 					// Send down for all keys in exact order
@@ -192,7 +198,6 @@ int InterceptMain(int argc, char* argv[]) {
 
 					break;
 				};
-				entryIndex++;
 			}
 
 			if (sendMappedKeyStroke)

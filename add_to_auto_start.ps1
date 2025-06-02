@@ -13,5 +13,5 @@ if (-Not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 }
 
 # Write-Host "Running as Administrator"
-# python add_to_service.py
+python add_to_service.py
 Pause

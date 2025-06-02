@@ -44,6 +44,8 @@
     <None Include="Run_InterceptKeys.xml.example" />
     <None Include="add_to_auto_start.ps1" />
     <None Include="add_to_service.py" />
+    <None Include="vcpkg.json" />
+    <None Include="vcpkg-configuration.json" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h">
