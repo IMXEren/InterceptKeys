@@ -1,14 +1,16 @@
-#include "common.h"
-#include "logger.hpp"
+
 #include "Service.hpp"
 
-#include <string>
+#include "common.h"
+#include "logger.hpp"
+
 #include <sstream>
+#include <string>
+#include <string_view>
 
 SERVICE_STATUS g_ServiceStatus = {};
 SERVICE_STATUS_HANDLE g_StatusHandle = nullptr;
 HANDLE g_ServiceStopEvent = nullptr;
-
 
 int getGlobalMutex(HANDLE* hMutex) {
 	*hMutex = CreateMutexA(nullptr, FALSE, "Global\\InterceptKeysMutex");
@@ -57,7 +59,7 @@ int AppMain(int argc, char* argv[]) {
 	HANDLE hMutex;
 	int err;
 
-	LogToFile("App Main");
+	DEBUG_PRINT("App Main");
 	if ((err = getGlobalMutex(&hMutex)) != 0) {
 		std::stringstream msgStream;
 		if (err == 1) {
@@ -68,15 +70,14 @@ int AppMain(int argc, char* argv[]) {
 		}
 		msgStream << err;
 		DEBUG_PRINT("Failed to create mutex: %s\n", msgStream.str().c_str());
-		LogToFile(msgStream.str().c_str());
 		return err;
 	}
 
-	LogToFile("App started");
+	DEBUG_PRINT("App started");
 	int status = InterceptMain(argc, argv);
 	std::stringstream msgStream;
 	msgStream << "App stopped: " << status;
-	LogToFile(msgStream.str().c_str());
+	DEBUG_PRINT("%s", msgStream.str().c_str());
 
 	ReleaseMutex(hMutex);
 	CloseHandle(hMutex);
@@ -115,9 +116,9 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR* argv) {
 	// Application
 	ProgramArgs params;
 	ConvertCommandLineArgs(argc, argv, &params.argc, &params.argv);
-	LogToFile("Service started");
+	DEBUG_PRINT("Service started");
 	HANDLE hThread = CreateThread(nullptr, 0, ServiceWorkerThread, &params, 0, nullptr);
-	LogToFile("Service stopped");
+	DEBUG_PRINT("Service stopped");
 	WaitForSingleObject(g_ServiceStopEvent, INFINITE);
 	free(params.argv);
 
@@ -137,7 +138,7 @@ void WINAPI ServiceCtrlHandler(DWORD CtrlCode) {
 
 		SetEvent(g_ServiceStopEvent);
 		break;
-	default:
+	default: 
 		break;
 	}
 }
@@ -150,8 +151,22 @@ DWORD WINAPI ServiceWorkerThread(LPVOID lpParam) {
 }
 
 int main(int argc, char* argv[]) {
-
 #ifdef _DEBUG
+	// initLogging();
+	std::string rotateFileLog = "intercept_keys";
+	std::string directory = LOGFILE_DIR;
+
+	auto logworker = g3::LogWorker::createLogWorker();
+	auto sinkHandle = logworker->addSink(
+		std::make_unique<LogRotate>(rotateFileLog, directory), &LogRotate::save);
+	g3::initializeLogging(logworker.get());
+
+	size_t maxBytesBeforeRotatingFile = 1000000;  // 10 MB
+	sinkHandle->call(&LogRotate::setMaxLogSize, maxBytesBeforeRotatingFile)
+		.wait();
+
+	DEBUG_PRINT("Starting InterceptKeys Service");
+
 	// In debug mode, run as a console application
 	// and not as a service
 	int status = AppMain(argc, argv);

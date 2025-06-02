@@ -1,33 +1,38 @@
 #include "logger.hpp"
 
-#include <windows.h>
-#include <stdio.h>
+#ifdef _DEBUG
 
-// temporary quick logger
-void LogToFile(const char* message) {
-	const char* filename = LOGFILE_NAME;
-    HANDLE hFile = CreateFileA(
-        filename,
-        FILE_APPEND_DATA,                // Append to the end
-        FILE_SHARE_READ,
-        NULL,
-        OPEN_ALWAYS,                     // Open existing or create new
-        FILE_ATTRIBUTE_NORMAL,
-        NULL
-    );
+// #include "quill/Backend.h"
+// #include "quill/Frontend.h"
+// #include "quill/Logger.h"
+// #include "quill/sinks/RotatingFileSink.h"
 
-    if (hFile == INVALID_HANDLE_VALUE) {
-        // Optional: Print to debug output if logging fails
-        OutputDebugStringA("Failed to open log file.\n");
-        return;
-    }
+// quill::Logger* gLogger = nullptr;
 
-    DWORD bytesWritten;
-    WriteFile(hFile, message, (DWORD)strlen(message), &bytesWritten, NULL);
+void initLogging() {
+	// quill::Backend::start();
+	// gLogger = quill::Frontend::create_or_get_logger(
+	//     "root", quill::Frontend::create_or_get_sink<quill::RotatingFileSink>(
+	//                 LOGFILE_PATH, []() {
+	//                   quill::RotatingFileSinkConfig cfg;
+	//                   cfg.set_open_mode('w');
+	//                   cfg.set_filename_append_option(
+	//                       quill::FilenameAppendOption::StartDateTime);
+	//                   cfg.set_rotation_max_file_size(10 * 1024 * 1024);  // 10MB
+	//                   return cfg;
+	//                 }()));
 
-    // Optionally write newline
-    const char newline[] = "\r\n";
-    WriteFile(hFile, newline, sizeof(newline) - 1, &bytesWritten, NULL);
+	std::string rotateFileLog = "intercept_keys";
+	std::string directory = LOGFILE_DIR;
 
-    CloseHandle(hFile);
+	auto logworker = g3::LogWorker::createLogWorker();
+	auto sinkHandle = logworker->addSink(
+		std::make_unique<LogRotate>(rotateFileLog, directory), &LogRotate::save);
+	g3::initializeLogging(logworker.get());
+
+	size_t maxBytesBeforeRotatingFile = 1000000;  // 10 MB
+	sinkHandle->call(&LogRotate::setMaxLogSize, maxBytesBeforeRotatingFile)
+		.wait();
 }
+
+#endif // _DEBUG
