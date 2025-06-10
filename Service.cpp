@@ -138,7 +138,7 @@ void WINAPI ServiceCtrlHandler(DWORD CtrlCode) {
 
 		SetEvent(g_ServiceStopEvent);
 		break;
-	default: 
+	default:
 		break;
 	}
 }
@@ -147,7 +147,9 @@ DWORD WINAPI ServiceWorkerThread(LPVOID lpParam) {
 	ProgramArgs params;
 	if (lpParam) params = *(ProgramArgs*)lpParam;
 	else params = { 0, nullptr };
-	return AppMain(params.argc, params.argv);
+	DWORD status = (DWORD)AppMain(params.argc, params.argv);
+	ServiceCtrlHandler(SERVICE_CONTROL_STOP);
+	return status;
 }
 
 int main(int argc, char* argv[]) {
