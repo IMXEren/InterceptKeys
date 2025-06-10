@@ -37,6 +37,11 @@ int InterceptMain(int argc, char* argv[]) {
 #endif // _DEBUG
 
 	KeyMapEntry::removeEmptyEntries(mapEntries);
+	if (mapEntries.empty()) {
+		DEBUG_PRINT("No key mappings found. Exiting...\n");
+		goto cleanup;
+	}
+
 	while (g_ServiceStatus.dwCurrentState != SERVICE_STOP_PENDING) {
 		InterceptionStroke stroke;
 		DEBUG_PRINT("Waiting on context...\n");
@@ -208,6 +213,7 @@ int InterceptMain(int argc, char* argv[]) {
 		interception_send(context, device, &stroke, 1);
 	}
 
+cleanup:
 	interception_destroy_context(context);
 	return 0;
 }
