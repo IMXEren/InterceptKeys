@@ -116,9 +116,9 @@ int InterceptMain(int argc, char* argv[]) {
 					else if (fromKey == code && extended == e0) {
 						foundModifierKey = true;
 						if (is_down)
-							entry.clickKey(code);
+							entry.clickKey(code, fromKeyIndex);
 						else
-							entry.releaseKey(code);
+							entry.releaseKey(code, fromKeyIndex);
 						DEBUG_PRINT("Pressed modifier key: %d, click: %d, state: %d\n",
 							code, is_down, state);
 						// DEBUG_PRINT("Pressed modifier key: {}, click: {}, state: {}\n",

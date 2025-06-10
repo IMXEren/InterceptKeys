@@ -1,12 +1,12 @@
 #pragma once
 
 #include <vector>
-#include <unordered_set>
+#include <intrin.h>
 
 struct KeyMapEntry {
 	std::vector<int> from;
 	std::vector<int> to;
-	std::unordered_set<int> fromKeysDown;
+	int8_t fromModKeysDown = 0b0000;
 	bool allToKeysDown = false;
 
 	KeyMapEntry() {
@@ -19,16 +19,16 @@ struct KeyMapEntry {
 		to = okeys;
 	}
 
-	void clickKey(int keycode) {
-		fromKeysDown.insert(keycode);
+	void clickKey(int keycode, int fromKeyIndex) {
+		fromModKeysDown = fromModKeysDown | (1 << fromKeyIndex);
 	}
 
-	void releaseKey(int keycode) {
-		fromKeysDown.erase(keycode);
+	void releaseKey(int keycode, int fromKeyIndex) {
+		fromModKeysDown = ~(~fromModKeysDown | 1 << fromKeyIndex);
 	}
 
-	size_t ctr() const {
-		return fromKeysDown.size();
+	int8_t ctr() const {
+		return (int8_t)__popcnt16(fromModKeysDown);
 	}
 
 	static void removeEmptyEntries(std::vector<KeyMapEntry> mapEntries) {
