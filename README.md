@@ -8,7 +8,7 @@ Create your own key/shortcuts by remapping them using necessary scan codes. It's
 2. Open project in Visual Studio using solution file ([`InterceptKeys.sln`](./InterceptKeys.sln)).
 3. Configure any [_mappings_](#mapping) you want and build the **Release** config.
 4. Now, the program needs to be run in background to be able to intercept and send mapped keys/shortcuts. For this, we will Task Scheduler in Windows. It'll schedule the program to auto start, when your computer starts.
-5. In Powershell (`powershell.exe`), run this command: `./add_to_task_scheduler.ps1`. It'll ask for admin permissions to work.
+5. In Powershell (`powershell.exe`), run this command: `./add_to_auto_start.ps1`. It'll ask for admin permissions to work.
 
 ## Mapping
 
