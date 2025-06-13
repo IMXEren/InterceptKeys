@@ -1,4 +1,5 @@
 #pragma once
+#define NOMINMAX
 #include <windows.h>
 
 #define INTERCEPT_SERVICE_NAME L"InterceptKeysService"
@@ -16,5 +17,5 @@ typedef struct {
 	char** argv;
 } ProgramArgs;
 
-int getGlobalMutex(HANDLE* hMutex);
+DWORD getGlobalMutex(HANDLE* hMutex);
 void ConvertCommandLineArgs(DWORD dwArgc, LPTSTR* lpszArgv, int* argcOut, char*** argvOut);

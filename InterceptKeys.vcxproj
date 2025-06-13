@@ -71,12 +71,28 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\Driver\Interception\library;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Driver\Interception\library\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)lib\interception;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)lib\interception\$(LibrariesArchitecture);$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)$(LibrariesArchitecture)\$(Configuration)\</OutDir>
+    <IntDir>$(ShortProjectName)\$(LibrariesArchitecture)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\Driver\Interception\library;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Driver\Interception\library\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)lib\interception;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)lib\interception\$(LibrariesArchitecture);$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)$(LibrariesArchitecture)\$(Configuration)\</OutDir>
+    <IntDir>$(ShortProjectName)\$(LibrariesArchitecture)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LibraryPath>$(ProjectDir)lib\interception\$(LibrariesArchitecture);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)lib\interception;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)$(LibrariesArchitecture)\$(Configuration)\</OutDir>
+    <IntDir>$(ShortProjectName)\$(LibrariesArchitecture)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LibraryPath>$(ProjectDir)lib\interception\$(LibrariesArchitecture);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)lib\interception;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)$(LibrariesArchitecture)\$(Configuration)\</OutDir>
+    <IntDir>$(ShortProjectName)\$(LibrariesArchitecture)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
@@ -85,14 +101,18 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BUILD_AS_SERVICE;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>interception.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /Y /D "$(ProjectDir)lib\interception\$(LibrariesArchitecture)\interception.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -100,7 +120,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BUILD_AS_SERVICE;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -109,13 +129,17 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>interception.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /Y /D "$(ProjectDir)lib\interception\$(LibrariesArchitecture)\interception.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BUILD_AS_SERVICE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -126,8 +150,7 @@
       <UACExecutionLevel>AsInvoker</UACExecutionLevel>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /D "$(ProjectDir)interception.dll" "$(OutDir)"
-</Command>
+      <Command>xcopy /Y /D "$(ProjectDir)lib\interception\$(LibrariesArchitecture)\interception.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -136,7 +159,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BUILD_AS_SERVICE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -149,8 +172,7 @@
       <UACExecutionLevel>AsInvoker</UACExecutionLevel>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /D "$(ProjectDir)interception.dll" "$(OutDir)"
-</Command>
+      <Command>xcopy /Y /D "$(ProjectDir)lib\interception\$(LibrariesArchitecture)\interception.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -164,15 +186,14 @@
     <None Include="add_to_auto_start.ps1" />
     <None Include="add_to_service.py" />
     <None Include="add_to_task_scheduler.py" />
-    <None Include="interception.dll" />
     <None Include="README.md" />
     <None Include="Run_InterceptKeys.xml.example" />
     <None Include="vcpkg-configuration.json" />
     <None Include="vcpkg.json" />
+    <None Include="xmake.lua" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h" />
-    <ClInclude Include="interception.h" />
     <ClInclude Include="keymap.hpp" />
     <ClInclude Include="keys.h" />
     <ClInclude Include="logger.hpp" />

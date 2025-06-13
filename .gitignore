@@ -1,6 +1,12 @@
 .vs/**
 InterceptKeys/**
 x64/**
-Debug/
-Release/
+x86/**
+
 *.log
+logs/
+
+.cache
+.xmake
+build/
+vcpkg_installed/

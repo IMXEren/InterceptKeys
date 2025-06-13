@@ -12,21 +12,12 @@ SERVICE_STATUS g_ServiceStatus = {};
 SERVICE_STATUS_HANDLE g_StatusHandle = nullptr;
 HANDLE g_ServiceStopEvent = nullptr;
 
-int getGlobalMutex(HANDLE* hMutex) {
+DWORD getGlobalMutex(HANDLE* hMutex) {
 	*hMutex = CreateMutexA(nullptr, FALSE, "Global\\InterceptKeysMutex");
-	if (hMutex == nullptr) {
-		// MessageBoxA(nullptr, "Failed to create mutex.", "Error", MB_OK |
-		// MB_ICONERROR);
+	if (*hMutex == nullptr) {
 		return 1;
 	}
-
-	DWORD err = GetLastError();
-	if (err == ERROR_ALREADY_EXISTS) {
-		// MessageBoxA(nullptr, "Another instance is already running.", "Instance
-		// Detected", MB_OK | MB_ICONEXCLAMATION);
-		return err;
-	}
-	return 0;
+	return GetLastError();
 }
 
 void ConvertCommandLineArgs(DWORD dwArgc, LPTSTR* lpszArgv, int* argcOut, char*** argvOut) {
@@ -59,25 +50,26 @@ int AppMain(int argc, char* argv[]) {
 	HANDLE hMutex;
 	int err;
 
-	DEBUG_PRINT("App Main");
+	DEBUG_PRINT("Trying to get a global mutex...\n");
+	LOG_DEBUG(gLogger, "Trying to get a global mutex...");
 	if ((err = getGlobalMutex(&hMutex)) != 0) {
 		std::stringstream msgStream;
 		if (err == 1) {
 			msgStream << "(nullptr)";
 		}
 		else if (err != 0) {
-			msgStream << std::system_category().message(err);
+			msgStream << std::system_category().message(err) << " error: " << err;
 		}
-		msgStream << err;
 		DEBUG_PRINT("Failed to create mutex: %s\n", msgStream.str().c_str());
+		LOG_DEBUG(gLogger,"Failed to create mutex: {}", msgStream.str());
 		return err;
 	}
 
-	DEBUG_PRINT("App started");
+	DEBUG_PRINT("Interception has started!\n");
+	LOG_DEBUG(gLogger, "Interception has started!");
 	int status = InterceptMain(argc, argv);
-	std::stringstream msgStream;
-	msgStream << "App stopped: " << status;
-	DEBUG_PRINT("%s", msgStream.str().c_str());
+	DEBUG_PRINT("Interception has stopped! status: %d\n", status);
+	LOG_DEBUG(gLogger,"Interception has stopped! status: {}", status);
 
 	ReleaseMutex(hMutex);
 	CloseHandle(hMutex);
@@ -116,9 +108,8 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR* argv) {
 	// Application
 	ProgramArgs params;
 	ConvertCommandLineArgs(argc, argv, &params.argc, &params.argv);
-	DEBUG_PRINT("Service started");
 	HANDLE hThread = CreateThread(nullptr, 0, ServiceWorkerThread, &params, 0, nullptr);
-	DEBUG_PRINT("Service stopped");
+	LOG_DEBUG(gLogger, "Service worker thread has started!");
 	WaitForSingleObject(g_ServiceStopEvent, INFINITE);
 	free(params.argv);
 
@@ -153,28 +144,12 @@ DWORD WINAPI ServiceWorkerThread(LPVOID lpParam) {
 }
 
 int main(int argc, char* argv[]) {
-#ifdef _DEBUG
-	// initLogging();
-	std::string rotateFileLog = "intercept_keys";
-	std::string directory = LOGFILE_DIR;
+	initLogging();
+	DEBUG_PRINT("Starting InterceptKeys Service...\n");
+	LOG_DEBUG(gLogger, "Starting InterceptKeys Service...");
 
-	auto logworker = g3::LogWorker::createLogWorker();
-	auto sinkHandle = logworker->addSink(
-		std::make_unique<LogRotate>(rotateFileLog, directory), &LogRotate::save);
-	g3::initializeLogging(logworker.get());
-
-	size_t maxBytesBeforeRotatingFile = 1000000;  // 10 MB
-	sinkHandle->call(&LogRotate::setMaxLogSize, maxBytesBeforeRotatingFile)
-		.wait();
-
-	DEBUG_PRINT("Starting InterceptKeys Service");
-
-	// In debug mode, run as a console application
-	// and not as a service
-	int status = AppMain(argc, argv);
-	return status;
-#else
-	// In release mode, run as a service
+#ifdef BUILD_AS_SERVICE
+	// Run as a service
 	SERVICE_TABLE_ENTRY ServiceTable[] = {
 		{ (LPWSTR)INTERCEPT_SERVICE_NAME, (LPSERVICE_MAIN_FUNCTION)ServiceMain },
 		{ nullptr, nullptr }
@@ -185,13 +160,18 @@ int main(int argc, char* argv[]) {
 		DWORD error = GetLastError();
 		std::string message = std::system_category().message(error);
 		DEBUG_PRINT("Failed to start service control dispatcher: %s\n", message.c_str());
+		LOG_DEBUG(gLogger,"Failed to start service control dispatcher: {}", message);
 		return error;
 	}
 	return 0;
-#endif // _DEBUG
+#else
+	// Run as a console application
+	int status = AppMain(argc, argv);
+	return status;
+#endif // BUILD_AS_SERVICE
 }
 
-int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	// These won't be passed to the ServiceMain
 	// but still here for completeness
 	return main(__argc, __argv);

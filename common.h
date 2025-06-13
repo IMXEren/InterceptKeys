@@ -1,12 +1,12 @@
 #pragma once
 #include "logger.hpp"
 
-#include <stdio.h>
+#ifndef ENABLE_LOGGING
+#  define LOG_DEBUG(...)
+#endif
 
-#ifdef _DEBUG
-// #  define DEBUG_PRINT(...) printf(__VA_ARGS__)
-#  define DEBUG_PRINT(...) LOGF(DEBUG, __VA_ARGS__)
-#else
+#ifdef BUILD_AS_SERVICE
 #  define DEBUG_PRINT(...)
-// #  define DEBUG_PRINT(...) LOGF(DEBUG, __VA_ARGS__)
+#else
+#  define DEBUG_PRINT(...) printf(__VA_ARGS__)
 #endif
