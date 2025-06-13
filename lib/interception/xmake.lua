@@ -1,5 +1,5 @@
 package("interception")
-    add_links("interception")
+    add_links("interception.lib")
 
     on_load(function (package)
         local linkdir = os.scriptdir()

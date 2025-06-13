@@ -1,3 +1,5 @@
+set_allowedplats("windows")
+set_allowedarchs("x86", "x64")
 set_languages("c++17")
 add_rules("mode.debug", "mode.release")
 add_defines("UNICODE", "_UNICODE")
@@ -12,15 +14,16 @@ add_requires("quill v9.0.3")
 -- add_defines("BUILD_AS_SERVICE") -- Define this to build as a service else it will build as a console application
 -- add_defines("ENABLE_LOGGING")   -- Define this to enable logging with log file rotation
 
-option("service", {default = true, description = "Build as a Windows service executable"})
-option("logging", {default = false, description = "Enable logging with log file rotation"})
-
-if has_config("service") then
+option("service")
+    set_description("Build as a Windows service executable")
+    set_default(true)
     add_defines("BUILD_AS_SERVICE")
-end
-if has_config("logging") then 
+option_end()
+option("logging")
+    set_description("Enable logging with log file rotation")
+    set_default(false)
     add_defines("ENABLE_LOGGING")
-end
+option_end()
 
 set_runtimes(is_mode("debug") and "MDd" or "MD")
 if is_mode("release") then
@@ -28,6 +31,7 @@ if is_mode("release") then
     add_ldflags("/LTCG", {force = true})
 end
 
+local interception_shared_lib = "interception.dll"
 target("InterceptKeys")
     set_kind("static")
     add_files("InterceptKeys.cpp")
@@ -35,19 +39,27 @@ target("InterceptKeys")
     add_files("mapped_entries.cpp")
     add_packages("interception")
     add_packages("quill", {public = true})
+    add_options("service")
+    add_options("logging")
+
+    after_build(function (target)
+        interception_shared_lib = path.join(target:pkg("interception"):get("linkdirs"), interception_shared_lib)
+    end)
 
 target("Service")
     set_values("windows.subsystem", "console")
-    add_ldflags("/SUBSYSTEM:CONSOLE")
     add_rules("win.sdk.application")
     add_files("Service.cpp")
-
     add_deps("InterceptKeys")
+    add_options("service")
+    add_options("logging")
 
     after_build(function (target)
         local arch = is_arch("x86_64", "x64") and "x64" or "x86"
         local mode = is_mode("release") and "Release" or "Debug"
-        os.cp(target:targetfile(), "$(scriptdir)/" .. arch .. "/" .. mode .. "/InterceptKeys.exe")
+        local vs_outdir = path.join(os.scriptdir(), arch, mode)
+        os.cp(target:targetfile(), path.join(vs_outdir, "InterceptKeys.exe"))
+        os.cp(interception_shared_lib, vs_outdir)
     end)
 
 --
