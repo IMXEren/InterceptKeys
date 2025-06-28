@@ -7,10 +7,6 @@ if is_mode("debug") then
     add_defines("_DEBUG")
 end
 
-includes("lib")
-add_requires("interception")
-add_requires("quill v9.0.3")
-
 -- add_defines("BUILD_AS_SERVICE") -- Define this to build as a service else it will build as a console application
 -- add_defines("ENABLE_LOGGING")   -- Define this to enable logging with log file rotation
 
@@ -25,6 +21,12 @@ option("logging")
     add_defines("ENABLE_LOGGING")
 option_end()
 
+includes("lib")
+add_requires("interception")
+if has_config("logging") then
+    add_requires("quill v9.0.3")
+end
+
 set_runtimes(is_mode("debug") and "MDd" or "MD")
 if is_mode("release") then
     add_cxflags("/GL", {force = true})
@@ -38,10 +40,12 @@ target("InterceptKeys")
     add_files("logger.cpp")
     add_files("mapped_entries.cpp")
     add_packages("interception")
-    add_packages("quill", {public = true})
     add_options("service")
     add_options("logging")
 
+    if has_config("logging") then
+        add_packages("quill", {public = true})
+    end
     after_build(function (target)
         interception_shared_lib = path.join(target:pkg("interception"):get("linkdirs"), interception_shared_lib)
     end)
