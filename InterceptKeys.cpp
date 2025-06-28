@@ -39,7 +39,7 @@ int InterceptMain(int argc, char* argv[]) {
 
 	KeyMapEntry::removeEmptyEntries(mapEntries);
 	if (mapEntries.empty()) {
-		DEBUG_PRINT("No key mappings found!\n");
+		PRINT_IF_NOT_SERVICE("No key mappings found!\n");
 		LOG_DEBUG(gLogger, "No key mappings found!");
 		goto cleanup;
 	}
@@ -72,7 +72,7 @@ int InterceptMain(int argc, char* argv[]) {
 
 				// Only on click as to not cause confusion
 				if (is_down) {
-					DEBUG_PRINT("%zd. Pressed key: %d (%s), click: %d, state: %d\n", ++noOfClicks, code, scanCode.c_str(), is_down, state);
+					PRINT_IF_NOT_SERVICE("%zd. Pressed key: %d (%s), click: %d, state: %d\n", ++noOfClicks, code, scanCode.c_str(), is_down, state);
 					LOG_DEBUG(gLogger, "{}. Pressed key: {} ({}), click: {}, state: {}", ++noOfClicks, code, scanCode, is_down, state);
 				}
 				interception_send(context, device, &stroke, 1);
@@ -93,7 +93,7 @@ int InterceptMain(int argc, char* argv[]) {
 					bool extended = e0bits == SC_E0;
 					if (extended)
 						fromKey -= SC_E0;
-					DEBUG_PRINT("From key[%d]: %d, extended: %d, finding key: %d, e0: %d\n",
+					PRINT_IF_NOT_SERVICE("From key[%d]: %d, extended: %d, finding key: %d, e0: %d\n",
 						fromKeyIndex, fromKey, extended, code, e0);
 					LOG_DEBUG(gLogger,"From key[{}]: {}, extended: {}, finding key: {}, e0: {}",
 						fromKeyIndex, fromKey, extended, code, e0);
@@ -103,7 +103,7 @@ int InterceptMain(int argc, char* argv[]) {
 					// Regular key
 					if (isLast) {
 						foundRegularKey = fromKey == code && extended == e0;
-						DEBUG_PRINT("Reached last key! found regular key: %d, ctr: %d, entry.from.size() - 1: %zd\n",
+						PRINT_IF_NOT_SERVICE("Reached last key! found regular key: %d, ctr: %d, entry.from.size() - 1: %zd\n",
 							foundRegularKey, entry.ctr(), entry.from.size() - 1);
 						LOG_DEBUG(gLogger,"Reached last key! found regular key: {}, ctr: {}, entry.from.size() - 1: {}",
 							foundRegularKey, entry.ctr(), entry.from.size() - 1);
@@ -112,7 +112,7 @@ int InterceptMain(int argc, char* argv[]) {
 							// Release the modifier keys
 							// Send the mapped key combo
 							sendMappedKeyStroke = true;
-							DEBUG_PRINT("Pressed regular key: %d, click: %d, state: %d\n",
+							PRINT_IF_NOT_SERVICE("Pressed regular key: %d, click: %d, state: %d\n",
 								code, is_down, state);
 							LOG_DEBUG(gLogger,"Pressed regular key: {}, click: {}, state: {}",
 								code, is_down, state);
@@ -125,7 +125,7 @@ int InterceptMain(int argc, char* argv[]) {
 							entry.clickKey(code, fromKeyIndex);
 						else
 							entry.releaseKey(code, fromKeyIndex);
-						DEBUG_PRINT("Pressed modifier key: %d, click: %d, state: %d\n",
+						PRINT_IF_NOT_SERVICE("Pressed modifier key: %d, click: %d, state: %d\n",
 							code, is_down, state);
 						LOG_DEBUG(gLogger,"Pressed modifier key: {}, click: {}, state: {}",
 							code, is_down, state);
@@ -175,7 +175,7 @@ int InterceptMain(int argc, char* argv[]) {
 							mktstroke.state |= INTERCEPTION_KEY_E0;
 
 						interception_send(context, device, (InterceptionStroke*)&mktstroke, 1);
-						DEBUG_PRINT("Sending key: %d, click: %d, state: %d\n",
+						PRINT_IF_NOT_SERVICE("Sending key: %d, click: %d, state: %d\n",
 							mktstroke.code, is_down, mktstroke.state);
 						LOG_DEBUG(gLogger,"Sending key: {}, click: {}, state: {}",
 							mktstroke.code, is_down, mktstroke.state);
@@ -205,7 +205,7 @@ int InterceptMain(int argc, char* argv[]) {
 					}
 
 					if (entry.to.empty()) {
-						DEBUG_PRINT("Sending key: disabled\n");
+						PRINT_IF_NOT_SERVICE("Sending key: disabled\n");
 						LOG_DEBUG(gLogger, "Sending key: disabled");
 					}
 

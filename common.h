@@ -6,7 +6,7 @@
 #endif
 
 #ifdef BUILD_AS_SERVICE
-#  define DEBUG_PRINT(...)
+#  define PRINT_IF_NOT_SERVICE(...)
 #else
-#  define DEBUG_PRINT(...) printf(__VA_ARGS__)
+#  define PRINT_IF_NOT_SERVICE(...) printf(__VA_ARGS__)
 #endif

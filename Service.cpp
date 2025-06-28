@@ -6,7 +6,6 @@
 
 #include <sstream>
 #include <string>
-#include <string_view>
 
 SERVICE_STATUS g_ServiceStatus = {};
 SERVICE_STATUS_HANDLE g_StatusHandle = nullptr;
@@ -50,7 +49,7 @@ int AppMain(int argc, char* argv[]) {
 	HANDLE hMutex;
 	int err;
 
-	DEBUG_PRINT("Trying to get a global mutex...\n");
+	PRINT_IF_NOT_SERVICE("Trying to get a global mutex...\n");
 	LOG_DEBUG(gLogger, "Trying to get a global mutex...");
 	if ((err = getGlobalMutex(&hMutex)) != 0) {
 		std::stringstream msgStream;
@@ -60,15 +59,15 @@ int AppMain(int argc, char* argv[]) {
 		else if (err != 0) {
 			msgStream << std::system_category().message(err) << " error: " << err;
 		}
-		DEBUG_PRINT("Failed to create mutex: %s\n", msgStream.str().c_str());
+		PRINT_IF_NOT_SERVICE("Failed to create mutex: %s\n", msgStream.str().c_str());
 		LOG_DEBUG(gLogger,"Failed to create mutex: {}", msgStream.str());
 		return err;
 	}
 
-	DEBUG_PRINT("Interception has started!\n");
+	PRINT_IF_NOT_SERVICE("Interception has started!\n");
 	LOG_DEBUG(gLogger, "Interception has started!");
 	int status = InterceptMain(argc, argv);
-	DEBUG_PRINT("Interception has stopped! status: %d\n", status);
+	PRINT_IF_NOT_SERVICE("Interception has stopped! status: %d\n", status);
 	LOG_DEBUG(gLogger,"Interception has stopped! status: {}", status);
 
 	ReleaseMutex(hMutex);
@@ -145,7 +144,7 @@ DWORD WINAPI ServiceWorkerThread(LPVOID lpParam) {
 
 int main(int argc, char* argv[]) {
 	initLogging();
-	DEBUG_PRINT("Starting InterceptKeys Service...\n");
+	PRINT_IF_NOT_SERVICE("Starting InterceptKeys Service...\n");
 	LOG_DEBUG(gLogger, "Starting InterceptKeys Service...");
 
 #ifdef BUILD_AS_SERVICE
@@ -159,7 +158,7 @@ int main(int argc, char* argv[]) {
 		// Failed to connect to service control manager
 		DWORD error = GetLastError();
 		std::string message = std::system_category().message(error);
-		DEBUG_PRINT("Failed to start service control dispatcher: %s\n", message.c_str());
+		PRINT_IF_NOT_SERVICE("Failed to start service control dispatcher: %s\n", message.c_str());
 		LOG_DEBUG(gLogger,"Failed to start service control dispatcher: {}", message);
 		return error;
 	}
