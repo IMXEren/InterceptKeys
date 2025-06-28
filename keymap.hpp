@@ -32,16 +32,11 @@ struct KeyMapEntry {
 	}
 
 	static void removeEmptyEntries(std::vector<KeyMapEntry> mapEntries) {
-		std::vector<int> emptyEntriesIndex;
-		int entryIndex = 0;
-		for (auto& entry : mapEntries) {
-			if (entry.from.empty()) {
-				emptyEntriesIndex.push_back(entryIndex);
-			}
-		}
-
-		for (auto& index : emptyEntriesIndex) {
-			mapEntries.erase(mapEntries.begin() + index);
-		}
+		mapEntries.erase(
+			std::remove_if(mapEntries.begin(), mapEntries.end(),
+				[](const KeyMapEntry& entry) {
+					return entry.from.empty();
+				}),
+			mapEntries.end());
 	}
 };
