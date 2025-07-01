@@ -71,39 +71,52 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir)lib\interception;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)lib\toml++;$(ProjectDir)lib\CLI11;$(ProjectDir)lib\interception;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)lib\interception\$(LibrariesArchitecture);$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)$(LibrariesArchitecture)\$(Configuration)\</OutDir>
     <IntDir>$(ShortProjectName)\$(LibrariesArchitecture)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir)lib\interception;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)lib\toml++;$(ProjectDir)lib\CLI11;$(ProjectDir)lib\interception;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)lib\interception\$(LibrariesArchitecture);$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)$(LibrariesArchitecture)\$(Configuration)\</OutDir>
     <IntDir>$(ShortProjectName)\$(LibrariesArchitecture)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LibraryPath>$(ProjectDir)lib\interception\$(LibrariesArchitecture);$(LibraryPath)</LibraryPath>
-    <IncludePath>$(ProjectDir)lib\interception;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)lib\toml++;$(ProjectDir)lib\CLI11;$(ProjectDir)lib\interception;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(LibrariesArchitecture)\$(Configuration)\</OutDir>
     <IntDir>$(ShortProjectName)\$(LibrariesArchitecture)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LibraryPath>$(ProjectDir)lib\interception\$(LibrariesArchitecture);$(LibraryPath)</LibraryPath>
-    <IncludePath>$(ProjectDir)lib\interception;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)lib\toml++;$(ProjectDir)lib\CLI11;$(ProjectDir)lib\interception;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(LibrariesArchitecture)\$(Configuration)\</OutDir>
     <IntDir>$(ShortProjectName)\$(LibrariesArchitecture)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
   </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>BUILD_AS_SERVICE;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -120,9 +133,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>BUILD_AS_SERVICE;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -139,9 +153,10 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>BUILD_AS_SERVICE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -159,9 +174,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>BUILD_AS_SERVICE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -176,9 +192,9 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Cli.hpp" />
     <ClCompile Include="InterceptKeys.cpp" />
     <ClCompile Include="logger.cpp" />
-    <ClCompile Include="mapped_entries.cpp" />
     <ClCompile Include="Service.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -186,6 +202,7 @@
     <None Include="add_to_auto_start.ps1" />
     <None Include="add_to_service.py" />
     <None Include="add_to_task_scheduler.py" />
+    <None Include="mapping.toml" />
     <None Include="README.md" />
     <None Include="Run_InterceptKeys.xml.example" />
     <None Include="vcpkg-configuration.json" />
@@ -197,7 +214,9 @@
     <ClInclude Include="keymap.hpp" />
     <ClInclude Include="keys.h" />
     <ClInclude Include="logger.hpp" />
+    <ClInclude Include="MapConfig.hpp" />
     <ClInclude Include="Service.hpp" />
+    <ClInclude Include="utils.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

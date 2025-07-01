@@ -1,6 +1,6 @@
 
 #include "Service.hpp"
-
+#include "Cli.hpp"
 #include "common.h"
 #include "logger.hpp"
 
@@ -12,7 +12,7 @@ SERVICE_STATUS_HANDLE g_StatusHandle = nullptr;
 HANDLE g_ServiceStopEvent = nullptr;
 
 DWORD getGlobalMutex(HANDLE* hMutex) {
-	*hMutex = CreateMutexA(nullptr, FALSE, "Global\\InterceptKeysMutex");
+	*hMutex = CreateMutexW(nullptr, TRUE, INTERCEPT_GLOBAL_MUTEX);
 	if (*hMutex == nullptr) {
 		return 1;
 	}
@@ -49,9 +49,12 @@ int AppMain(int argc, char* argv[]) {
 	HANDLE hMutex;
 	int err;
 
-	PRINT_IF_NOT_SERVICE("Trying to get a global mutex...\n");
-	LOG_DEBUG(gLogger, "Trying to get a global mutex...");
+	INTERCEPT_LOGE_N_ERR(gLogger, "Trying to get a global mutex...");
 	if ((err = getGlobalMutex(&hMutex)) != 0) {
+		if (err == ERROR_ALREADY_EXISTS && hMutex) {
+			INTERCEPT_LOGE_N_ERR(gLogger, "Already exists");
+			ReleaseMutex(hMutex);
+		}
 		std::stringstream msgStream;
 		if (err == 1) {
 			msgStream << "(nullptr)";
@@ -59,16 +62,13 @@ int AppMain(int argc, char* argv[]) {
 		else if (err != 0) {
 			msgStream << std::system_category().message(err) << " error: " << err;
 		}
-		PRINT_IF_NOT_SERVICE("Failed to create mutex: %s\n", msgStream.str().c_str());
-		LOG_DEBUG(gLogger,"Failed to create mutex: {}", msgStream.str());
+		INTERCEPT_LOGE_N_ERR(gLogger, "Failed to create mutex: {}", msgStream.str());
 		return err;
 	}
 
-	PRINT_IF_NOT_SERVICE("Interception has started!\n");
-	LOG_DEBUG(gLogger, "Interception has started!");
-	int status = InterceptMain(argc, argv);
-	PRINT_IF_NOT_SERVICE("Interception has stopped! status: %d\n", status);
-	LOG_DEBUG(gLogger,"Interception has stopped! status: {}", status);
+	INTERCEPT_LOGD_N_OUT(gLogger, "Interception has started!");
+	int status = InterceptKeys();
+	INTERCEPT_LOGD_N_OUT(gLogger, "Interception has stopped! status: {}", status);
 
 	ReleaseMutex(hMutex);
 	CloseHandle(hMutex);
@@ -76,7 +76,8 @@ int AppMain(int argc, char* argv[]) {
 }
 
 void WINAPI ServiceMain(DWORD argc, LPTSTR* argv) {
-	g_StatusHandle = RegisterServiceCtrlHandler(INTERCEPT_SERVICE_NAME, ServiceCtrlHandler);
+
+	g_StatusHandle = RegisterServiceCtrlHandler(Service::SERVICE_NAME, ServiceCtrlHandler);
 	if (!g_StatusHandle) return;
 
 	// Set initial status
@@ -108,7 +109,7 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR* argv) {
 	ProgramArgs params;
 	ConvertCommandLineArgs(argc, argv, &params.argc, &params.argv);
 	HANDLE hThread = CreateThread(nullptr, 0, ServiceWorkerThread, &params, 0, nullptr);
-	LOG_DEBUG(gLogger, "Service worker thread has started!");
+	INTERCEPT_LOG_DEBUG(gLogger, "Service worker thread has started!");
 	WaitForSingleObject(g_ServiceStopEvent, INFINITE);
 	free(params.argv);
 
@@ -143,31 +144,26 @@ DWORD WINAPI ServiceWorkerThread(LPVOID lpParam) {
 }
 
 int main(int argc, char* argv[]) {
-	initLogging();
-	PRINT_IF_NOT_SERVICE("Starting InterceptKeys Service...\n");
-	LOG_DEBUG(gLogger, "Starting InterceptKeys Service...");
+	int run = gCli.parse_and_run(argc, argv);
+	INTERCEPT_LOGD_N_OUT(gLogger, "Starting InterceptKeys Service...");
 
-#ifdef BUILD_AS_SERVICE
+	if (run == Cli::RUN_AS_CONSOLE) {
+		int status = AppMain(argc, argv);
+		return status;
+	}
+
 	// Run as a service
 	SERVICE_TABLE_ENTRY ServiceTable[] = {
-		{ (LPWSTR)INTERCEPT_SERVICE_NAME, (LPSERVICE_MAIN_FUNCTION)ServiceMain },
+		{ (LPWSTR)Service::SERVICE_NAME, (LPSERVICE_MAIN_FUNCTION)ServiceMain },
 		{ nullptr, nullptr }
 	};
-
 	if (!StartServiceCtrlDispatcher(ServiceTable)) {
 		// Failed to connect to service control manager
 		DWORD error = GetLastError();
-		std::string message = std::system_category().message(error);
-		PRINT_IF_NOT_SERVICE("Failed to start service control dispatcher: %s\n", message.c_str());
-		LOG_DEBUG(gLogger,"Failed to start service control dispatcher: {}", message);
+		INTERCEPT_LOGD_N_OUT(gLogger, "Failed to start service control dispatcher: {}", std::system_category().message(error));
 		return error;
 	}
 	return 0;
-#else
-	// Run as a console application
-	int status = AppMain(argc, argv);
-	return status;
-#endif // BUILD_AS_SERVICE
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {

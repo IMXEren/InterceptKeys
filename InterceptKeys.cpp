@@ -3,54 +3,37 @@
 #include "keys.h"
 #include "keymap.hpp"
 #include "Service.hpp"
+#include "Cli.hpp"
 
 #include <sstream>
 #include <string>
 
-extern std::vector<KeyMapEntry> mapEntries;
-
-int InterceptMain(int argc, char* argv[]) {
+int InterceptKeys() {
 	InterceptionContext context = interception_create_context();
 	InterceptionDevice device;
 
 	interception_set_filter(context, interception_is_keyboard, INTERCEPTION_FILTER_KEY_ALL);
 
-#ifdef _DEBUG
+	// Used in detectKeysOnly mode
 	bool detectKeysOnly = false;
 	size_t noOfClicks = 0;
-
-	if (argc > 1) {
-		for (int i = 1; i < argc; i++) {
-			std::string arg = argv[i];
-			if (arg == "-h" || arg == "--help") {
-				printf("Usage: InterceptKeys.exe [options]\n");
-				printf("Options:\n");
-				printf("  -h, --help\tShow this help message\n");
-				printf("  --detect-keys-only\tHelper to detect key clicks to find the necessary scancode.\n");
-				return 0;
-			}
-
-			if (arg == "--detect-keys-only") {
-				detectKeysOnly = true;
-			}
-		}
+	if (gCli.detect_keys_only_flag) {
+		detectKeysOnly = true;
 	}
-#endif // _DEBUG
 
-	KeyMapEntry::removeEmptyEntries(mapEntries);
-	if (mapEntries.empty()) {
-		PRINT_IF_NOT_SERVICE("No key mappings found!\n");
-		LOG_DEBUG(gLogger, "No key mappings found!");
+	KeyMapEntry::removeEmptyEntries(g_MapEntries);
+	if (g_MapEntries.empty()) {
+		INTERCEPT_LOGD_N_OUT(gLogger, "No key mappings found!");
 		goto cleanup;
 	}
 
 	while (g_ServiceStatus.dwCurrentState != SERVICE_STOP_PENDING) {
 		InterceptionStroke stroke;
-		LOG_DEBUG(gLogger, "Waiting on context...");
+		INTERCEPT_LOG_DEBUG(gLogger, "Waiting on context...");
 		device = interception_wait(context);
 
 		if (interception_is_keyboard(device)) {
-			LOG_DEBUG(gLogger, "Waiting for key stroke...");
+			INTERCEPT_LOG_DEBUG(gLogger, "Waiting for key stroke...");
 			interception_receive(context, device, &stroke, 1);
 			InterceptionKeyStroke* kstroke = (InterceptionKeyStroke*)&stroke;
 
@@ -59,31 +42,29 @@ int InterceptMain(int argc, char* argv[]) {
 			bool is_down = (state & INTERCEPTION_KEY_UP) == 0;
 			bool e0 = (state & INTERCEPTION_KEY_E0) != 0; // Extended key flag
 
-#ifdef _DEBUG
 			if (detectKeysOnly) {
 				std::stringstream _scanCode;
 				std::string scanCode;
-				_scanCode << std::showbase << std::hex << std::uppercase << code;
-				_scanCode.flags(std::ios::fmtflags());
+				int codeWithFlags = code;
 				if (e0) {
-					_scanCode << " | SC_E0";
+					codeWithFlags |= (0xE0 << 8);
 				}
+				_scanCode << "0x" << std::hex << std::uppercase << codeWithFlags;
+				_scanCode.flags(std::ios::fmtflags());
 				scanCode = _scanCode.str();
 
 				// Only on click as to not cause confusion
 				if (is_down) {
-					PRINT_IF_NOT_SERVICE("%zd. Pressed key: %d (%s), click: %d, state: %d\n", ++noOfClicks, code, scanCode.c_str(), is_down, state);
-					LOG_DEBUG(gLogger, "{}. Pressed key: {} ({}), click: {}, state: {}", ++noOfClicks, code, scanCode, is_down, state);
+					INTERCEPT_LOGD_N_OUT(gLogger, "{}. Pressed key: {} ({}), click: {}, state: {}", ++noOfClicks, code, scanCode, is_down, state);
 				}
 				interception_send(context, device, &stroke, 1);
 				continue;
 			}
-#endif // _DEBUG
 
 			// Iterating entries to find the one that matches
 			// If the entry is found, send the mapped key stroke
 			bool sendMappedKeyStroke = false;
-			for (auto& entry : mapEntries) {
+			for (auto& entry : g_MapEntries) {
 				bool foundModifierKey = false;
 				bool foundRegularKey = false;
 
@@ -93,9 +74,7 @@ int InterceptMain(int argc, char* argv[]) {
 					bool extended = e0bits == SC_E0;
 					if (extended)
 						fromKey -= SC_E0;
-					PRINT_IF_NOT_SERVICE("From key[%d]: %d, extended: %d, finding key: %d, e0: %d\n",
-						fromKeyIndex, fromKey, extended, code, e0);
-					LOG_DEBUG(gLogger,"From key[{}]: {}, extended: {}, finding key: {}, e0: {}",
+					INTERCEPT_LOGD_N_OUT(gLogger, "From key[{}]: {}, extended: {}, finding key: {}, e0: {}",
 						fromKeyIndex, fromKey, extended, code, e0);
 
 					bool isLast = fromKeyIndex == entry.from.size() - 1;
@@ -103,18 +82,14 @@ int InterceptMain(int argc, char* argv[]) {
 					// Regular key
 					if (isLast) {
 						foundRegularKey = fromKey == code && extended == e0;
-						PRINT_IF_NOT_SERVICE("Reached last key! found regular key: %d, ctr: %d, entry.from.size() - 1: %zd\n",
-							foundRegularKey, entry.ctr(), entry.from.size() - 1);
-						LOG_DEBUG(gLogger,"Reached last key! found regular key: {}, ctr: {}, entry.from.size() - 1: {}",
+						INTERCEPT_LOGD_N_OUT(gLogger, "Reached last key! found regular key? {}, ctr: {}, entry.from.size() - 1: {}",
 							foundRegularKey, entry.ctr(), entry.from.size() - 1);
 						if (foundRegularKey && entry.ctr() == entry.from.size() - 1) {
 							// This key should be suppressed
 							// Release the modifier keys
 							// Send the mapped key combo
 							sendMappedKeyStroke = true;
-							PRINT_IF_NOT_SERVICE("Pressed regular key: %d, click: %d, state: %d\n",
-								code, is_down, state);
-							LOG_DEBUG(gLogger,"Pressed regular key: {}, click: {}, state: {}",
+							INTERCEPT_LOGD_N_OUT(gLogger, "Pressed regular key: {}, click: {}, state: {}",
 								code, is_down, state);
 						}
 					}
@@ -125,9 +100,7 @@ int InterceptMain(int argc, char* argv[]) {
 							entry.clickKey(code, fromKeyIndex);
 						else
 							entry.releaseKey(code, fromKeyIndex);
-						PRINT_IF_NOT_SERVICE("Pressed modifier key: %d, click: %d, state: %d\n",
-							code, is_down, state);
-						LOG_DEBUG(gLogger,"Pressed modifier key: {}, click: {}, state: {}",
+						INTERCEPT_LOGD_N_OUT(gLogger, "Pressed modifier key: {}, click: {}, state: {}",
 							code, is_down, state);
 					}
 
@@ -175,9 +148,7 @@ int InterceptMain(int argc, char* argv[]) {
 							mktstroke.state |= INTERCEPTION_KEY_E0;
 
 						interception_send(context, device, (InterceptionStroke*)&mktstroke, 1);
-						PRINT_IF_NOT_SERVICE("Sending key: %d, click: %d, state: %d\n",
-							mktstroke.code, is_down, mktstroke.state);
-						LOG_DEBUG(gLogger,"Sending key: {}, click: {}, state: {}",
+						INTERCEPT_LOGD_N_OUT(gLogger, "Sending key: {}, click: {}, state: {}",
 							mktstroke.code, is_down, mktstroke.state);
 						};
 
@@ -205,8 +176,7 @@ int InterceptMain(int argc, char* argv[]) {
 					}
 
 					if (entry.to.empty()) {
-						PRINT_IF_NOT_SERVICE("Sending key: disabled\n");
-						LOG_DEBUG(gLogger, "Sending key: disabled");
+						INTERCEPT_LOGD_N_OUT(gLogger, "Sending key: disabled");
 					}
 
 					break;

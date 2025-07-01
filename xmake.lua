@@ -1,5 +1,6 @@
+set_version("0.1.0", {build = "%Y%m%d%H%M"})
 set_allowedplats("windows")
-set_allowedarchs("x86", "x64")
+set_allowedarchs("x86", "x64", "x86_64")
 set_languages("c++17")
 add_rules("mode.debug", "mode.release")
 add_defines("UNICODE", "_UNICODE")
@@ -7,25 +8,21 @@ if is_mode("debug") then
     add_defines("_DEBUG")
 end
 
--- add_defines("BUILD_AS_SERVICE") -- Define this to build as a service else it will build as a console application
--- add_defines("ENABLE_LOGGING")   -- Define this to enable logging with log file rotation
-
-option("service")
-    set_description("Build as a Windows service executable")
+option("vs_build")
+    set_description("Copy the built executable and interception.dll to the Visual Studio output directory")
     set_default(true)
-    add_defines("BUILD_AS_SERVICE")
 option_end()
-option("logging")
-    set_description("Enable logging with log file rotation")
+option("dist")
+    set_description("Create a distribution package with the built executable, interception.dll etc.")
     set_default(false)
-    add_defines("ENABLE_LOGGING")
 option_end()
 
 includes("lib")
 add_requires("interception")
-if has_config("logging") then
-    add_requires("quill v9.0.3")
-end
+add_requires("CLI11")
+add_requires("toml++")
+add_requires("fmt 11.2.0")
+add_requires("quill v10.0.1")
 
 set_runtimes(is_mode("debug") and "MDd" or "MD")
 if is_mode("release") then
@@ -38,14 +35,16 @@ target("InterceptKeys")
     set_kind("static")
     add_files("InterceptKeys.cpp")
     add_files("logger.cpp")
-    add_files("mapped_entries.cpp")
-    add_packages("interception")
-    add_options("service")
-    add_options("logging")
+    add_includedirs("$(builddir)/config")
 
-    if has_config("logging") then
-        add_packages("quill", {public = true})
-    end
+    add_packages("interception")
+    add_packages("CLI11", {public = true})
+    add_packages("toml++", {public = true})
+    add_packages("quill", {public = true})
+    add_packages("fmt")
+    -- Instead of using {public = true}, directly add packages due to no support for inheritance of cxxflags
+    -- ref: https://github.com/xmake-io/xmake/issues/5653#issuecomment-2368107908
+
     after_build(function (target)
         interception_shared_lib = path.join(target:pkg("interception"):get("linkdirs"), interception_shared_lib)
     end)
@@ -55,15 +54,82 @@ target("Service")
     add_rules("win.sdk.application")
     add_files("Service.cpp")
     add_deps("InterceptKeys")
-    add_options("service")
-    add_options("logging")
+    add_packages("fmt")
+
+    add_configfiles("config.h.in")
+    set_configdir("$(builddir)/config")
+    add_includedirs("$(builddir)/config")
 
     after_build(function (target)
-        local arch = is_arch("x86_64", "x64") and "x64" or "x86"
-        local mode = is_mode("release") and "Release" or "Debug"
-        local vs_outdir = path.join(os.scriptdir(), arch, mode)
-        os.cp(target:targetfile(), path.join(vs_outdir, "InterceptKeys.exe"))
-        os.cp(interception_shared_lib, vs_outdir)
+        if has_config("vs_build") then
+            local arch = is_arch("x86_64", "x64") and "x64" or "x86"
+            local mode = is_mode("release") and "Release" or "Debug"
+            local vs_outdir = path.join(os.scriptdir(), arch, mode)
+            os.cp(target:targetfile(), path.join(vs_outdir, "InterceptKeys.exe"))
+            os.cp(interception_shared_lib, vs_outdir)
+        end
+
+        if has_config("dist") then
+            local arch = is_arch("x86_64", "x64") and "x64" or "x86"
+            local mode = is_mode("release") and "Release" or "Debug"
+            local outname = "InterceptKeys_" .. mode:lower() .. "_" .. arch
+            local outdir = path.join(os.tmpdir(), outname)
+
+            os.mkdir(outdir)
+
+            -- Copy artifacts
+            local exe_path = path.join(outdir, "InterceptKeys.exe")
+            os.cp(target:targetfile(), exe_path)
+            os.cp(interception_shared_lib, path.join(outdir, "interception.dll"))
+            os.cp("mapping.toml", path.join(outdir, "mapping.toml.example"))
+            os.cp("README.md", outdir)
+            os.cp("docs", outdir)
+
+            -- Write config file
+            local config_txt = string.format(
+                "mode=%s\narch=%s\n",
+                mode, arch
+            )
+            io.writefile(path.join(outdir, ".BUILD_CONFIG"), config_txt)
+
+            local archive_path = path.join(os.scriptdir(), "dist", outname .. ".7z")
+            local oldcwd = os.cd(outdir)
+            os.execv("7z", {"a", "-mx9", archive_path, "*"})
+            os.cd(oldcwd)
+
+            print("✓ Packed: " .. archive_path)
+            os.rm(outdir, {force = true}) -- Clean up temp directory
+        end
+    end)
+
+task("build_dist")
+    set_menu {
+        usage = "xmake build_all_variants",
+        description = "Build all combinations of arch, mode, and config options"
+    }
+
+    on_run(function ()
+
+        local modes = {"debug", "release"}
+        local archs = {"x86", "x64"}
+
+        for _, mode in ipairs(modes) do
+            for _, arch in ipairs(archs) do
+                local config = {
+                    mode = mode,
+                    arch = arch,
+                }
+
+                print("==> Building: mode=" .. mode .. " arch=" .. arch)
+
+                -- set config
+                os.vrunv("xmake", {"f", "-y", "-m", mode, "-a", arch,
+                                    "--vs_build=n", "--dist=y"})
+
+                -- build
+                os.vrun("xmake build")
+            end
+        end
     end)
 
 --

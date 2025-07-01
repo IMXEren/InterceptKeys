@@ -1,4 +1,5 @@
 import subprocess
+import sys
 from pathlib import Path
 
 SERVICE_NAME = "InterceptKeysService"
@@ -40,6 +41,8 @@ def add_to_service():
         "start=",
         "auto",
     ]
+    query_config_command = ["sc", "qc", SERVICE_NAME]
+    query_description_command = ["sc", "qdescription", SERVICE_NAME]
     set_description_command = ["sc", "description", SERVICE_NAME, DESCRIPTION]
     # Set recovery actions:
     #   - restart on 1st, 2nd, and subsequent failures
@@ -61,12 +64,27 @@ def add_to_service():
     exit_code = run_command_in_console(create_command)
     if exit_code != 0:
         print(f"Failed to create service {SERVICE_NAME}. Error code: {exit_code}")
-        print(
-            f"If the service already exists, please delete it first using admin privileges: \n{' '.join(delete_command)}\n and reboot the system."
-        )
-        return
+        if exit_code == 1073:  # ERROR_SERVICE_EXISTS
+            print(
+                "----------------------------------------------------------------------------------------\n"
+                "                                     SERVICE INFO                                       \n"
+                "----------------------------------------------------------------------------------------"
+            )
+            run_command_in_console(query_description_command)
+            run_command_in_console(query_config_command)
+            print(
+                "----------------------------------------------------------------------------------------\n"
+                "                                     xxxxxxxxxxxx                                       \n"
+                "----------------------------------------------------------------------------------------"
+            )
+            user_input = (
+                input("Do you want to update the service? [y/n] ").strip().lower()
+            )
+            if user_input != "y":
+                return
+    else:
+        print(f"Service {SERVICE_NAME} created successfully.")
 
-    print(f"Service {SERVICE_NAME} created successfully.")
     exit_code = run_command_in_console(set_description_command)
     if exit_code != 0:
         print(
@@ -97,4 +115,11 @@ def add_to_service():
 
 
 if __name__ == "__main__":
+    if len(sys.argv) >= 2:
+        BIN_PATH = Path(sys.argv[1]).resolve()
+        print(f"Using executable path: {BIN_PATH}")
+    else:
+        print(
+            "No executable path provided. Using default: x64/Release/InterceptKeys.exe"
+        )
     main()

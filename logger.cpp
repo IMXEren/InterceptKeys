@@ -1,23 +1,20 @@
 #include "logger.hpp"
-
-#ifdef ENABLE_LOGGING
+#include <filesystem>
 
 #include "quill/Backend.h"
 #include "quill/Frontend.h"
 #include "quill/Logger.h"
 #include "quill/sinks/RotatingFileSink.h"
 
-#define LOGFILE_DIR  __FILE__ "\\..\\logs"
-#define LOGFILE_PATH LOGFILE_DIR "\\intercept_keys.log"
-
 quill::Logger* gLogger = nullptr;
 
-void initLogging() {
+void initLogging(const std::filesystem::path& log_dir) {
 	if (gLogger != nullptr) return;
+	auto log_file = log_dir / "intercept_keys.log";
 	quill::Backend::start();
 	gLogger = quill::Frontend::create_or_get_logger(
 		"root", quill::Frontend::create_or_get_sink<quill::RotatingFileSink>(
-			LOGFILE_PATH, []() {
+			log_file.string(), []() {
 				quill::RotatingFileSinkConfig cfg;
 				cfg.set_open_mode('w');
 				cfg.set_filename_append_option(
@@ -27,5 +24,3 @@ void initLogging() {
 			}()));
 	gLogger->set_log_level(quill::LogLevel::Debug);
 }
-
-#endif // ENABLE_LOGGING

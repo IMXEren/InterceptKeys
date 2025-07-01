@@ -1,0 +1,5 @@
+[[mappings]]
+## (LWin + LShift + F23) Copilot Key -> RCtrl
+priority = -1
+from = [0xE05B, 0x2A, 0x6E]
+to = [0xE01D]
