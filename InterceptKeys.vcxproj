@@ -199,12 +199,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
-    <None Include="add_to_auto_start.ps1" />
-    <None Include="add_to_service.py" />
-    <None Include="add_to_task_scheduler.py" />
     <None Include="mapping.toml" />
     <None Include="README.md" />
-    <None Include="Run_InterceptKeys.xml.example" />
     <None Include="vcpkg-configuration.json" />
     <None Include="vcpkg.json" />
     <None Include="xmake.lua" />
