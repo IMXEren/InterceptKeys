@@ -5,7 +5,7 @@ Create your own key/shortcuts by remapping them using necessary scan codes. It's
 ## Installation
 
 1. Install [interception driver](https://github.com/oblitum/Interception) as specified and restart.
-2. Go to [Releases](https://github.com/IMXEren/InterceptKeys/releases/latest), download `InterceptKeys_release_x64_service_nologging.7z` and extract to a folder.
+2. Go to [Releases](https://github.com/IMXEren/InterceptKeys/releases/latest), download `InterceptKeys_release_x64.7z` and extract to a folder.
 3. Configure any [_mappings_](#mapping) you want.
 4. Open Command Prompt (`cmd.exe`) as admin in the folder and run command: `InterceptKeys.exe install`. Follow the instructions and it'll be done.
 5. It'll install **InterceptKeysService** to ensure it auto starts and run in background all the time.
