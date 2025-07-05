@@ -4,6 +4,7 @@
 #include "keymap.hpp"
 #include "Service.hpp"
 #include "Cli.hpp"
+#include "utils.hpp"
 
 #include <sstream>
 #include <string>
@@ -26,6 +27,8 @@ int InterceptKeys() {
 		INTERCEPT_LOGD_N_OUT(gLogger, "No key mappings found!");
 		goto cleanup;
 	}
+
+	utils::process::raise_process_priority();
 
 	while (g_ServiceStatus.dwCurrentState != SERVICE_STOP_PENDING) {
 		InterceptionStroke stroke;

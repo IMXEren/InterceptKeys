@@ -64,4 +64,14 @@ namespace utils {
 			rtrim(wstr);
 		}
 	} // string
+
+	namespace process {
+		inline void raise_process_priority(void) {
+			SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+		}
+
+		inline void lower_process_priority(void) {
+			SetPriorityClass(GetCurrentProcess(), NORMAL_PRIORITY_CLASS);
+		}
+	} // process
 } // utils
