@@ -1,4 +1,4 @@
-set_version("0.1.0", {build = "%Y%m%d%H%M"})
+set_version("0.1.1", {build = "%Y%m%d%H%M"})
 set_allowedplats("windows")
 set_allowedarchs("x86", "x64", "x86_64")
 set_languages("c++17")
