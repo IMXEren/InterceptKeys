@@ -76,7 +76,7 @@ int InterceptKeys() {
 					int e0bits = fromKey & SC_E0;
 					bool extended = e0bits == SC_E0;
 					if (extended)
-						fromKey -= SC_E0;
+						fromKey &= ~SC_E0;
 					INTERCEPT_LOGD_N_OUT(gLogger, "From key[{}]: {}, extended: {}, finding key: {}, e0: {}",
 						fromKeyIndex, fromKey, extended, code, e0);
 
@@ -123,7 +123,7 @@ int InterceptKeys() {
 						int e0bits = fromKey & SC_E0;
 						bool extended = e0bits == SC_E0;
 						if (extended)
-							fromKey -= SC_E0;
+							fromKey &= ~SC_E0;
 
 						mkfstroke.code = fromKey;
 						mkfstroke.state = INTERCEPTION_KEY_UP;
@@ -140,7 +140,7 @@ int InterceptKeys() {
 						int e0bits = toKey & SC_E0;
 						bool extended = e0bits == SC_E0;
 						if (extended)
-							toKey -= SC_E0;
+							toKey &= ~SC_E0;
 
 						mktstroke.code = toKey;
 						if (is_down)
