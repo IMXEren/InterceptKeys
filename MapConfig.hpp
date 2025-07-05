@@ -120,6 +120,8 @@ public:
 				std::vector<int> from_entries = toml_array_to_vector<int>(from_arr);
 				std::vector<int> to_entries = toml_array_to_vector<int>(to_arr);
 				KeyMapEntry entry(from_entries, to_entries);
+				auto entry_loaded_template = fmt::format("{}. {} -> {}", mapping_index, entry.from, entry.to);
+				INTERCEPT_LOGD_N_OUT(gLogger, "{}", entry_loaded_template);
 				mapConfigEntries.emplace_back(std::move(std::pair(priority, entry)));
 			}
 
