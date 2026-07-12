@@ -65,10 +65,6 @@ struct KeyMapEntry {
 		from_mod_keys_down &= ~(1 << key_index);
 	}
 
-	int8_t ctr() const {
-		return (int8_t)__popcnt16(from_mod_keys_down);
-	}
-
 	bool modifiers_matched() const {
         return from_mod_keys_down == target_mod_mask;
     }
