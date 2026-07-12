@@ -15,7 +15,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
-#include <iostream>
 #include <iterator>
 #include <string>
 #include <string_view>
@@ -44,11 +43,11 @@ public:
 	MapConfig(std::vector<std::string> configPathList) : config_path_list(configPathList) {}
 
 	void prefix_path_output(std::string_view config_path) const {
-		INTERCEPT_LOGE_N_ERR(gLogger, "[path: {}] ", config_path);
+		INTERCEPT_LOGE_N_ERR(g_Logger, "[path: {}] ", config_path);
 	}
 
 	void prefix_source_output(toml::source_region source) const {
-		INTERCEPT_LOGE_N_ERR(gLogger, "[source: At {}]", source);
+		INTERCEPT_LOGE_N_ERR(g_Logger, "[source: At {}]", source);
 	}
 
 	void move_map_config_entries_to_mapped_entries() {
@@ -62,14 +61,14 @@ public:
 		for (const auto& config_path : config_path_list) {
 			toml::parse_result result = toml::parse_file(config_path);
 			if (!result) {
-				INTERCEPT_LOGE_N_ERR(gLogger, "Parsing failed for file: {}\nError: {}", config_path, result.error());
+				INTERCEPT_LOGE_N_ERR(g_Logger, "Parsing failed for file: {}\nError: {}", config_path, result.error());
 				continue;
 			}
-			INTERCEPT_LOGD_N_OUT(gLogger, "Parsed file: {}", config_path);
+			INTERCEPT_LOGD_N_OUT(g_Logger, "Parsed file: {}", config_path);
 			toml::array* mappings = result["mappings"].as_array();
 			if (!mappings) {
 				prefix_path_output(config_path);
-				INTERCEPT_LOGE_N_ERR(gLogger, "No 'mappings' array found in file");
+				INTERCEPT_LOGE_N_ERR(g_Logger, "No 'mappings' array found in file");
 				continue;
 			}
 			int mapping_index = -1;
@@ -78,7 +77,7 @@ public:
 				toml::table* map_table = mapping.as_table();
 				if (!map_table) {
 					prefix_path_output(config_path);
-					INTERCEPT_LOGE_N_ERR(gLogger, "Mapping[{}] is not a table. Type: {}", mapping_index, mapping.type());
+					INTERCEPT_LOGE_N_ERR(g_Logger, "Mapping[{}] is not a table. Type: {}", mapping_index, mapping.type());
 					prefix_source_output(mapping.source());
 					continue;
 				}
@@ -86,14 +85,14 @@ public:
 				toml::array* to_arr = (*map_table)["to"].as_array();
 				if (!from_arr || !to_arr) {
 					prefix_path_output(config_path);
-					INTERCEPT_LOGE_N_ERR(gLogger, "Mapping[{}] must contain both 'from' and 'to' arrays. "
+					INTERCEPT_LOGE_N_ERR(g_Logger, "Mapping[{}] must contain both 'from' and 'to' arrays. "
 						"Incase of disabling the keystrokes, put an empty 'to' array. This helps remove ambiguity if 'to' is actually disabled.", mapping_index);
 					prefix_source_output(map_table->source());
 					continue;
 				}
 				if (from_arr->empty()) {
 					prefix_path_output(config_path);
-					INTERCEPT_LOGE_N_ERR(gLogger, "Mapping[{}] 'from' array is empty.", mapping_index);
+					INTERCEPT_LOGE_N_ERR(g_Logger, "Mapping[{}] 'from' array is empty.", mapping_index);
 					prefix_source_output(from_arr->source());
 					continue;
 				}
@@ -101,7 +100,7 @@ public:
 					!(to_arr->size() <= 5 && to_arr->is_homogeneous<int64_t>()))
 				{
 					prefix_path_output(config_path);
-					INTERCEPT_LOGE_N_ERR(gLogger, "Invalid 'from' or 'to' arrays in mapping[{}]. "
+					INTERCEPT_LOGE_N_ERR(g_Logger, "Invalid 'from' or 'to' arrays in mapping[{}]. "
 						"Expected max 5 keys and all integer values...", mapping_index);
 					prefix_source_output(from_arr->source());
 					prefix_source_output(to_arr->source());
@@ -120,8 +119,8 @@ public:
 				std::vector<int> from_entries = toml_array_to_vector<int>(from_arr);
 				std::vector<int> to_entries = toml_array_to_vector<int>(to_arr);
 				KeyMapEntry entry(from_entries, to_entries);
-				auto entry_loaded_template = fmt::format("{}. {} -> {}", mapping_index, entry.from, entry.to);
-				INTERCEPT_LOGD_N_OUT(gLogger, "{}", entry_loaded_template);
+				auto entry_loaded_template = fmt::format("{}. {} -> {}", mapping_index, entry.raw_from_keys(), entry.raw_to_keys());
+				INTERCEPT_LOGD_N_OUT(g_Logger, "{}", entry_loaded_template);
 				mapConfigEntries.emplace_back(std::move(std::pair(priority, entry)));
 			}
 

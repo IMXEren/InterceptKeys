@@ -2,10 +2,6 @@
 #include "Service.hpp"
 #include "Cli.hpp"
 #include "common.h"
-#include "logger.hpp"
-
-#include <sstream>
-#include <string>
 
 SERVICE_STATUS g_ServiceStatus = {};
 SERVICE_STATUS_HANDLE g_StatusHandle = nullptr;
@@ -49,26 +45,32 @@ int AppMain(int argc, char* argv[]) {
 	HANDLE hMutex;
 	int err;
 
-	INTERCEPT_LOGE_N_ERR(gLogger, "Trying to get a global mutex...");
+	INTERCEPT_LOGE_N_ERR(g_Logger, "Trying to get a global mutex...");
 	if ((err = getGlobalMutex(&hMutex)) != 0) {
 		if (err == ERROR_ALREADY_EXISTS && hMutex) {
-			INTERCEPT_LOGE_N_ERR(gLogger, "Already exists");
+			INTERCEPT_LOGE_N_ERR(g_Logger, "Already exists");
 			ReleaseMutex(hMutex);
 		}
-		std::stringstream msgStream;
 		if (err == 1) {
-			msgStream << "(nullptr)";
+			INTERCEPT_LOGE_N_ERR(g_Logger, "Failed to create mutex: (nullptr)");
 		}
 		else if (err != 0) {
-			msgStream << std::system_category().message(err) << " error: " << err;
+			INTERCEPT_LOGE_N_ERR(g_Logger, "Failed to create mutex: {} error: {}",
+				std::system_category().message(err), err);
 		}
-		INTERCEPT_LOGE_N_ERR(gLogger, "Failed to create mutex: {}", msgStream.str());
 		return err;
 	}
 
-	INTERCEPT_LOGD_N_OUT(gLogger, "Interception has started!");
-	int status = InterceptKeys();
-	INTERCEPT_LOGD_N_OUT(gLogger, "Interception has stopped! status: {}", status);
+	int status;
+	if (g_Cli.detect_keys_only_flag) {
+		INTERCEPT_LOGD_N_OUT(g_Logger, "Detection has started!");
+		status = DetectKeysOnly();
+		INTERCEPT_LOGD_N_OUT(g_Logger, "Detection has stopped!");
+	} else {
+		INTERCEPT_LOGD_N_OUT(g_Logger, "Interception has started!");
+		status = InterceptKeys();
+		INTERCEPT_LOGD_N_OUT(g_Logger, "Interception has stopped! status: {}", status);
+	}
 
 	ReleaseMutex(hMutex);
 	CloseHandle(hMutex);
@@ -109,7 +111,7 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR* argv) {
 	ProgramArgs params;
 	ConvertCommandLineArgs(argc, argv, &params.argc, &params.argv);
 	HANDLE hThread = CreateThread(nullptr, 0, ServiceWorkerThread, &params, 0, nullptr);
-	INTERCEPT_LOG_DEBUG(gLogger, "Service worker thread has started!");
+	INTERCEPT_LOG_DEBUG(g_Logger, "Service worker thread has started!");
 	WaitForSingleObject(g_ServiceStopEvent, INFINITE);
 	free(params.argv);
 
@@ -144,8 +146,8 @@ DWORD WINAPI ServiceWorkerThread(LPVOID lpParam) {
 }
 
 int main(int argc, char* argv[]) {
-	int run = gCli.parse_and_run(argc, argv);
-	INTERCEPT_LOGD_N_OUT(gLogger, "Starting InterceptKeys Service...");
+	int run = g_Cli.parse_and_run(argc, argv);
+	INTERCEPT_LOGD_N_OUT(g_Logger, "Starting InterceptKeys Service...");
 
 	if (run == Cli::RUN_AS_CONSOLE) {
 		int status = AppMain(argc, argv);
@@ -160,7 +162,7 @@ int main(int argc, char* argv[]) {
 	if (!StartServiceCtrlDispatcher(ServiceTable)) {
 		// Failed to connect to service control manager
 		DWORD error = GetLastError();
-		INTERCEPT_LOGD_N_OUT(gLogger, "Failed to start service control dispatcher: {}", std::system_category().message(error));
+		INTERCEPT_LOGD_N_OUT(g_Logger, "Failed to start service control dispatcher: {}", std::system_category().message(error));
 		return error;
 	}
 	return 0;

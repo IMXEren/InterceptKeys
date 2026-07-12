@@ -1,4 +1,4 @@
-set_version("0.1.1", {build = "%Y%m%d%H%M"})
+set_version("0.1.2-dev.1", {build = "%Y%m%d%H%M"})
 set_allowedplats("windows")
 set_allowedarchs("x86", "x64", "x86_64")
 set_languages("c++17")
@@ -19,10 +19,10 @@ option_end()
 
 includes("lib")
 add_requires("interception")
-add_requires("CLI11")
-add_requires("toml++")
-add_requires("fmt 11.2.0")
-add_requires("quill v10.0.1")
+add_requires("cli11 2.6.2")
+add_requires("toml++ a43ad3787293f4a46b1d70c0924b5a25d10e79fc")
+add_requires("fmt 12.2.0")
+add_requires("quill v12.0.0")
 
 set_runtimes(is_mode("debug") and "MDd" or "MD")
 if is_mode("release") then
@@ -38,7 +38,7 @@ target("InterceptKeys")
     add_includedirs("$(builddir)/config")
 
     add_packages("interception")
-    add_packages("CLI11", {public = true})
+    add_packages("cli11", {public = true})
     add_packages("toml++", {public = true})
     add_packages("quill", {public = true})
     add_packages("fmt")
@@ -83,6 +83,7 @@ target("Service")
             os.cp(interception_shared_lib, path.join(outdir, "interception.dll"))
             os.cp("mapping.toml", path.join(outdir, "mapping.toml.example"))
             os.cp("README.md", outdir)
+            os.cp("LICENSE", outdir)
             os.cp("docs", outdir)
 
             -- Write config file
