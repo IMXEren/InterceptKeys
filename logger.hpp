@@ -5,5 +5,5 @@
 
 #include <filesystem>
 
-extern quill::Logger* gLogger;
+extern quill::Logger* g_Logger;
 void initLogging(const std::filesystem::path& log_dir);

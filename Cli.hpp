@@ -1,14 +1,13 @@
-
 #pragma once
+
 #include "config.h"
-#include "CLI11.hpp"
+#include "CLI/CLI.hpp"
 #include "Service.hpp"
 #include "MapConfig.hpp"
 #include "common.h"
 
 #include <algorithm>
 #include <filesystem>
-#include <iostream>
 #include <iterator>
 #include <string>
 #include <system_error>
@@ -21,7 +20,7 @@ class Cli {
 		std::error_code ec;
 		auto path = std::filesystem::canonical(config_path, ec);
 		if (ec) {
-			INTERCEPT_LOGE_N_ERR(gLogger, "Invalid path: '{}'. {}", config_path, ec.message());
+			INTERCEPT_LOGE_N_ERR(g_Logger, "Invalid path: '{}'. {}", config_path, ec.message());
 			return false;
 		}
 		return true;
@@ -43,7 +42,7 @@ public:
 
 		gApp.add_flag("--status", status_flag, "Fetch the running status of InterceptKeysService.");
 		gApp.add_flag("--detect-keys-only", detect_keys_only_flag, "Helper to detect key clicks to find the necessary scancode.");
-		gApp.add_flag("--service", SERVICE_FLAG, "Run the interception as a service. Recommended after you've setup the map config.");
+		gApp.add_flag("--service", g_ServiceFlag, "Run the interception as a service. Recommended after you've setup the map config.");
 
 		std::filesystem::path log_directory = std::filesystem::current_path() / "logs";
 		auto logging_option = gApp.add_option("--logging", log_directory, "Enable logging")
@@ -73,7 +72,7 @@ public:
 
 		try {
 			gApp.parse(argc, argv);
-			INTERCEPT_LOGD_N_OUT(gLogger, "Parsed args!");
+			INTERCEPT_LOG_DEBUG(g_Logger, "Parsed args!");
 		}
 		catch (const CLI::ParseError& e) {
 			int code = gApp.exit(e);
@@ -87,22 +86,22 @@ public:
 				INTERCEPT_EPRINTLN("Failed to create log directory: {}. {}", log_directory.string(), ec.message());
 				exit(ec.value());
 			}
-			LOGGING_FLAG = true;
+			g_LoggingFlag = true;
 			initLogging(log_directory);
-			INTERCEPT_LOGD_N_OUT(gLogger, "Using log directory: {}", log_directory.string());
+			INTERCEPT_LOGD_N_OUT(g_Logger, "Using log directory: {}", log_directory.string());
 		}
 
 		for (auto& config_path : map_config) {
 			auto path = std::filesystem::canonical(config_path);
-			INTERCEPT_LOGD_N_OUT(gLogger, "Using map config: {}", path.string());
+			INTERCEPT_LOGD_N_OUT(g_Logger, "Using map config: {}", path.string());
 			config_path = path.string();
 		}
 
 		if (gApp.got_subcommand(install_command)) {
-			INTERCEPT_LOGD_N_OUTW(gLogger, "Installing InterceptKeysService...");
+			INTERCEPT_LOGD_N_OUTW(g_Logger, "Installing InterceptKeysService...");
 			std::vector<std::string> args = {};
 			args.push_back("--service");
-			if (LOGGING_FLAG) {
+			if (g_LoggingFlag) {
 				args.push_back(logging_option->get_name());
 				args.push_back(log_directory.string());
 			}
@@ -112,19 +111,19 @@ public:
 			install(args);
 		}
 		else if (gApp.got_subcommand(start_command)) {
-			INTERCEPT_LOGD_N_OUT(gLogger, "Starting InterceptKeysService...");
+			INTERCEPT_LOGD_N_OUT(g_Logger, "Starting InterceptKeysService...");
 			start();
 		}
 		else if (gApp.got_subcommand(stop_command)) {
-			INTERCEPT_LOGD_N_OUT(gLogger, "Stopping InterceptKeysService...");
+			INTERCEPT_LOGD_N_OUT(g_Logger, "Stopping InterceptKeysService...");
 			stop();
 		}
 		else if (gApp.got_subcommand(restart_command)) {
-			INTERCEPT_LOGD_N_OUT(gLogger, "Restarting InterceptKeysService...");
+			INTERCEPT_LOGD_N_OUT(g_Logger, "Restarting InterceptKeysService...");
 			restart();
 		}
 		else if (gApp.got_subcommand(uninstall_command)) {
-			INTERCEPT_LOGD_N_OUT(gLogger, "Uninstalling InterceptKeysService...");
+			INTERCEPT_LOGD_N_OUT(g_Logger, "Uninstalling InterceptKeysService...");
 			uninstall();
 		}
 		else if (status_flag == true) {
@@ -134,7 +133,7 @@ public:
 		}
 
 		int run = RUN_AS_CONSOLE;
-		if (SERVICE_FLAG)
+		if (g_ServiceFlag)
 			run = RUN_AS_SERVICE;
 
 		MapConfig mc(std::move(map_config));
@@ -142,33 +141,29 @@ public:
 		return run;
 	}
 
-	[[noreturn]]
 	static void install(const std::vector<std::string>& exe_args) {
 		Service intercept_service;
 		BOOL ok = intercept_service.create_or_update_service(exe_args);
 		if (!ok) {
-			INTERCEPT_LOGE_N_ERR(gLogger, "Failed to install the service.");
+			INTERCEPT_LOGE_N_ERR(g_Logger, "Failed to install the service.");
 			exit(1);
 		}
 		ok = intercept_service.start_service();
 		exit(~ok);
 	}
 
-	[[noreturn]]
 	static void start() {
 		Service intercept_service;
 		BOOL ok = intercept_service.start_service();
 		exit(~ok);
 	}
 
-	[[noreturn]]
 	static void stop() {
 		Service intercept_service;
 		BOOL ok = intercept_service.stop_service();
 		exit(~ok);
 	}
 
-	[[noreturn]]
 	static void restart() {
 		Service intercept_service;
 		BOOL ok = intercept_service.stop_service();
@@ -179,7 +174,6 @@ public:
 		exit(~ok);
 	}
 
-	[[noreturn]]
 	static void uninstall() {
 		Service intercept_service;
 		BOOL ok = intercept_service.delete_service();
@@ -187,4 +181,4 @@ public:
 	}
 };
 
-inline Cli gCli;
+inline Cli g_Cli;
