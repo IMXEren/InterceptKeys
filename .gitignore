@@ -10,3 +10,4 @@ logs/
 .xmake
 build/
 vcpkg_installed/
+dist/
