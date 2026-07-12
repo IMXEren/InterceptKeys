@@ -21,8 +21,8 @@ includes("lib")
 add_requires("interception")
 add_requires("cli11 2.6.2")
 add_requires("toml++ a43ad3787293f4a46b1d70c0924b5a25d10e79fc")
-add_requires("fmt 11.2.0")
-add_requires("quill v10.0.1")
+add_requires("fmt 12.2.0")
+add_requires("quill v12.0.0")
 
 set_runtimes(is_mode("debug") and "MDd" or "MD")
 if is_mode("release") then
