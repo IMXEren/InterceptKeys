@@ -20,6 +20,7 @@ void WINAPI ServiceCtrlHandler(DWORD CtrlCode);
 void WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
 DWORD WINAPI ServiceWorkerThread(LPVOID lpParam);
 int InterceptKeys();
+int DetectKeysOnly();
 
 typedef struct {
 	int argc;
@@ -73,8 +74,8 @@ public:
 		DWORD len = GetModuleFileNameW(nullptr, path_buf, MAX_PATH);
 		DWORD err = GetLastError();
 		if (len == 0 || err) {
-			INTERCEPT_LOGE_N_ERRW(gLogger, "Failed to get executable path (len: {}): {}\nError: {}", len, std::wstring(path_buf), err);
-			INTERCEPT_LOGE_N_ERR(gLogger, "Exiting...");
+			INTERCEPT_LOGE_N_ERRW(g_Logger, "Failed to get executable path (len: {}): {}\nError: {}", len, std::wstring(path_buf), err);
+			INTERCEPT_LOGE_N_ERR(g_Logger, "Exiting...");
 			exit(err);
 		}
 		BIN_PATH = path_buf;
@@ -85,9 +86,9 @@ public:
 			_scm = OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS);
 			if (!_scm) {
 				DWORD err = GetLastError();
-				INTERCEPT_LOGE_N_ERR(gLogger, "Failed to open Service Control Manager. Error: {}", err);
+				INTERCEPT_LOGE_N_ERR(g_Logger, "Failed to open Service Control Manager. Error: {}", err);
 				if (err == ERROR_ACCESS_DENIED) {
-					INTERCEPT_LOGE_N_ERR(gLogger, "Please run this program inside a console executed as administrator.");
+					INTERCEPT_LOGE_N_ERR(g_Logger, "Please run this program inside a console executed as administrator.");
 				}
 			}
 		}
@@ -100,7 +101,7 @@ public:
 			assert(_scm && "Service Manager handle cannot be null");
 			_service = OpenService(_scm, SERVICE_NAME, SERVICE_ALL_ACCESS);
 			if (!_service) {
-				INTERCEPT_LOGE_N_ERR(gLogger, "Failed to open existing service. Error: {}", GetLastError());
+				INTERCEPT_LOGE_N_ERR(g_Logger, "Failed to open existing service. Error: {}", GetLastError());
 			}
 		}
 		return _service;
@@ -113,14 +114,14 @@ public:
 		if (!status) {
 			DWORD err = GetLastError();
 			if (err == ERROR_SERVICE_ALREADY_RUNNING) {
-				INTERCEPT_LOGE_N_ERR(gLogger, "Service already running.");
+				INTERCEPT_LOGE_N_ERR(g_Logger, "Service already running.");
 			}
 			else {
-				INTERCEPT_LOGE_N_ERR(gLogger, "Failed to start service. Error: {}", err);
+				INTERCEPT_LOGE_N_ERR(g_Logger, "Failed to start service. Error: {}", err);
 			}
 		}
 		else {
-			INTERCEPT_LOGD_N_OUT(gLogger, "Service started successfully.");
+			INTERCEPT_LOGD_N_OUT(g_Logger, "Service started successfully.");
 		}
 		return status;
 	}
@@ -132,22 +133,22 @@ public:
 		if (!status) {
 			DWORD err = GetLastError();
 			if (err == ERROR_SERVICE_NOT_ACTIVE) {
-				INTERCEPT_LOGD_N_OUT(gLogger, "Service is already not running.");
+				INTERCEPT_LOGD_N_OUT(g_Logger, "Service is already not running.");
 				return TRUE;
 			}
 			else {
-				INTERCEPT_LOGE_N_ERR(gLogger, "Failed to stop service. Error: {}", err);
+				INTERCEPT_LOGE_N_ERR(g_Logger, "Failed to stop service. Error: {}", err);
 			}
 		}
 		else {
-			INTERCEPT_LOGD_N_OUT(gLogger, "Service stopped successfully.");
+			INTERCEPT_LOGD_N_OUT(g_Logger, "Service stopped successfully.");
 		}
 		return status;
 	}
 
 	BOOL create_or_update_service(const std::vector<std::string>& exe_args) {
 		assert(!BIN_PATH.empty() && "Binary path cannot be empty");
-		INTERCEPT_LOGD_N_OUTW(gLogger, "Using executable path: {}", BIN_PATH);
+		INTERCEPT_LOGD_N_OUTW(g_Logger, "Using executable path: {}", BIN_PATH);
 
 		SC_HANDLE scm = get_service_manager();
 		if (!scm) {
@@ -163,7 +164,7 @@ public:
 		}
 
 		args = fmt::format(LR"("{}" {})", BIN_PATH, args);
-		INTERCEPT_LOGD_N_OUTW(gLogger, "{}", args);
+		INTERCEPT_LOGD_N_OUTW(g_Logger, "{}", args);
 
 		SC_HANDLE service = CreateServiceW(
 			scm,
@@ -183,7 +184,7 @@ public:
 
 		DWORD lastError = GetLastError();
 		if (!service && lastError == ERROR_SERVICE_EXISTS) {
-			INTERCEPT_LOGD_N_OUT(gLogger, "Service already exists.");
+			INTERCEPT_LOGD_N_OUT(g_Logger, "Service already exists.");
 
 			INTERCEPT_PRINTLN("------------------------------------------------------------------------------------------------------------");
 			INTERCEPT_PRINTLN("                                                 SERVICE INFO                                               ");
@@ -202,7 +203,7 @@ public:
 
 			service = get_service();
 			if (!service) {
-				INTERCEPT_LOGE_N_ERR(gLogger, "Failed to open existing service. Error: {}", GetLastError());
+				INTERCEPT_LOGE_N_ERR(g_Logger, "Failed to open existing service. Error: {}", GetLastError());
 				return FALSE;
 			}
 
@@ -216,21 +217,21 @@ public:
 				nullptr, nullptr, nullptr, nullptr, nullptr,
 				DISPLAY_NAME
 			)) {
-				INTERCEPT_LOGE_N_ERR(gLogger, "Failed to update service config. Error: {}", GetLastError());
+				INTERCEPT_LOGE_N_ERR(g_Logger, "Failed to update service config. Error: {}", GetLastError());
 			}
 		}
 		else if (!service) {
-			INTERCEPT_LOGE_N_ERR(gLogger, "Failed to create service. Error: {}", lastError);
+			INTERCEPT_LOGE_N_ERR(g_Logger, "Failed to create service. Error: {}", lastError);
 			return FALSE;
 		}
 		else {
-			INTERCEPT_LOGD_N_OUT(gLogger, "Service created successfully.");
+			INTERCEPT_LOGD_N_OUT(g_Logger, "Service created successfully.");
 		}
 
 		SERVICE_DESCRIPTION desc = { 0 };
 		desc.lpDescription = const_cast<LPWSTR>(DESCRIPTION);
 		if (!ChangeServiceConfig2W(service, SERVICE_CONFIG_DESCRIPTION, &desc)) {
-			INTERCEPT_LOGE_N_ERR(gLogger, "Failed to set description. Error: {}", GetLastError());
+			INTERCEPT_LOGE_N_ERR(g_Logger, "Failed to set description. Error: {}", GetLastError());
 		}
 
 		/*
@@ -251,16 +252,16 @@ public:
 		actions.dwResetPeriod = 0;
 
 		if (!ChangeServiceConfig2W(service, SERVICE_CONFIG_FAILURE_ACTIONS, &actions)) {
-			INTERCEPT_LOGE_N_ERR(gLogger, "Failed to set recovery actions. Error: {}", GetLastError());
+			INTERCEPT_LOGE_N_ERR(g_Logger, "Failed to set recovery actions. Error: {}", GetLastError());
 		}
 		else {
-			INTERCEPT_LOGD_N_OUT(gLogger, "Recovery actions set successfully.");
+			INTERCEPT_LOGD_N_OUT(g_Logger, "Recovery actions set successfully.");
 		}
 
 		// Enable recovery actions on crash
 		DWORD crash_recovery = TRUE;
 		if (!ChangeServiceConfig2W(service, SERVICE_CONFIG_FAILURE_ACTIONS_FLAG, &crash_recovery)) {
-			INTERCEPT_LOGE_N_ERR(gLogger, "Failed to enable recovery. Error: {}", GetLastError());
+			INTERCEPT_LOGE_N_ERR(g_Logger, "Failed to enable recovery. Error: {}", GetLastError());
 		}
 
 		return TRUE;
@@ -270,31 +271,31 @@ public:
 		SC_HANDLE service = get_service();
 		assert(service != nullptr && "Service handle cannot be null");
 		if (!service) {
-			INTERCEPT_LOGE_N_ERR(gLogger, "Service not found! Failed to delete service.");
+			INTERCEPT_LOGE_N_ERR(g_Logger, "Service not found! Failed to delete service.");
 			return FALSE;
 		}
 		BOOL status = DeleteService(service);
 		if (!status) {
-			INTERCEPT_LOGE_N_ERR(gLogger, "Failed to delete service. Error: {}", GetLastError());
+			INTERCEPT_LOGE_N_ERR(g_Logger, "Failed to delete service. Error: {}", GetLastError());
 			return FALSE;
 		}
 
-		INTERCEPT_LOGD_N_OUT(gLogger, "Service deleted successfully.");
+		INTERCEPT_LOGD_N_OUT(g_Logger, "Service deleted successfully.");
 		return TRUE;
 	}
 
 	DWORD get_service_status() {
 		SC_HANDLE service = get_service();
 		if (!service) {
-			INTERCEPT_LOGE_N_ERR(gLogger, "Service not found! Failed to get service status.");
+			INTERCEPT_LOGE_N_ERR(g_Logger, "Service not found! Failed to get service status.");
 			return ERROR_NOT_FOUND;
 		}
 		if (!QueryServiceStatus(service, &g_ServiceStatus)) {
 			DWORD err = GetLastError();
-			INTERCEPT_LOGE_N_ERR(gLogger, "Failed to query service status. Error: {}", err);
+			INTERCEPT_LOGE_N_ERR(g_Logger, "Failed to query service status. Error: {}", err);
 			return err;
 		}
-		INTERCEPT_LOGE_N_ERR(gLogger, "Service Status: {}", g_ServiceStatus.dwCurrentState);
+		INTERCEPT_LOGE_N_ERR(g_Logger, "Service Status: {}", g_ServiceStatus.dwCurrentState);
 		return ERROR_SUCCESS;
 	}
 };
