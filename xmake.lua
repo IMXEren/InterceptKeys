@@ -83,6 +83,7 @@ target("Service")
             os.cp(interception_shared_lib, path.join(outdir, "interception.dll"))
             os.cp("mapping.toml", path.join(outdir, "mapping.toml.example"))
             os.cp("README.md", outdir)
+            os.cp("LICENSE", outdir)
             os.cp("docs", outdir)
 
             -- Write config file
