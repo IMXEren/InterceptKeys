@@ -4,6 +4,7 @@
 #include "logger.hpp"
 
 #include "fmt/base.h"
+#include "fmt/ranges.h"
 #include "fmt/ostream.h"
 #include "quill/HelperMacros.h"
 
